@@ -123,6 +123,17 @@ const EntryController = {
       const { format = 'json' } = req.query;
       const entries = await EntryService.getAllForExport();
 
+      const formatDateVal = (val) => {
+        if (!val) return '';
+        if (val instanceof Date) {
+          const year = val.getFullYear();
+          const month = String(val.getMonth() + 1).padStart(2, '0');
+          const day = String(val.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+        return String(val).split('T')[0];
+      };
+
       if (format === 'csv') {
         const headers = [
           'ID',
@@ -152,8 +163,8 @@ const EntryController = {
             e.priority,
             e.amount || '',
             e.quantity || '',
-            e.entry_date ? e.entry_date.split('T')[0] : '',
-            e.due_date ? e.due_date.split('T')[0] : '',
+            formatDateVal(e.entry_date),
+            formatDateVal(e.due_date),
             e.recurring || 'none',
             `"${subItemsText.replace(/"/g, '""')}"`,
             `"${(e.description || '').replace(/"/g, '""')}"`,

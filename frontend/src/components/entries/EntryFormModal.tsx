@@ -59,8 +59,8 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
       setTitle(initialData.title || '');
       setDescription(initialData.description || '');
       setCategoryId(initialData.category_id || '');
-      setEntryDate(initialData.entry_date ? initialData.entry_date.split('T')[0] : '');
-      setDueDate(initialData.due_date ? initialData.due_date.split('T')[0] : '');
+      setEntryDate(initialData.entry_date ? String(initialData.entry_date).split('T')[0] : '');
+      setDueDate(initialData.due_date ? String(initialData.due_date).split('T')[0] : '');
       setStatus(initialData.status || 'pending');
       setPriority(initialData.priority || 'medium');
       setAmount(initialData.amount !== null && initialData.amount !== undefined ? initialData.amount.toString() : '');
