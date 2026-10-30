@@ -5,12 +5,21 @@
 
 ---
 
-## 🌟 ฟีเจอร์หลัก (Core Features)
+## 🌟 ฟีเจอร์หลัก (Core Features & Enhancements)
 
-- 📊 **Dashboard ภาพรวม:** สรุปตัวเลขสถิติรายการทั้งหมด, รายการที่ยังค้าง, รายการที่เสร็จสิ้น, รายการโปรด/ปักหมุด, รายการล่าสุด และรายการที่ใกล้ครบกำหนด
-- 📋 **Flexible Entry System:** รายการเดียวรองรับได้หลากหลายประเภท (To-do, Shopping List, Expense Notes, Personal Notes, Goals, Reminders) ด้วยฟิลด์ข้อมูลที่ยืดหยุ่น (กำหนดส่ง, ปริมาณ, ยอดเงิน, แท็ก ฯลฯ)
+- 📊 **Dashboard & Expense Analytics:**
+  - สรุปตัวเลขสถิติรายการทั้งหมด, งานค้าง, รายการที่เสร็จสิ้น, รายการโปรด
+  - แถบเตือนงานค้างเกินกำหนด (Overdue) และงาน 7 วันข้างหน้า
+  - **Expense Analytics:** แถบวิเคราะห์สัดส่วนรายจ่ายแยกตามหมวดหมู่ (เปอร์เซ็นต์และยอดเงินจริง)
+- 🛒 **Sub-Items / Checklist & Granular Expenses (รายการย่อย & คำนวณรายจ่ายอัตโนมัติ):**
+  - รองรับการกรอกรายการย่อยในแต่ละบันทึก เช่น รายการซื้อของที่ตลาด (1. ผัก 50฿, 2. ผลไม้ 100฿)
+  - **Auto-Calculate Total Amount:** ระบบจะรวมยอดเงินและจำนวนชิ้นจากรายการย่อยขึ้นมาเป็นยอดรวมของรายการให้อัตโนมัติ
+  - Checkbox ติ๊กถูกทำเครื่องหมายรายการย่อยได้ทันทีจากหน้าการ์ด พร้อมแถบ Progress Bar
+- 🌙 **Dark Mode (โหมดมืด-สว่าง):** สลับโหมดใช้งานกลางคืนหรือกลางวันได้ง่ายด้วย 1-Click พร้อมบันทึกลง LocalStorage
+- 📥 **Export & Backup Data:** ส่งออกข้อมูลทั้งหมดเป็นไฟล์ **Excel (CSV)** (รองรับภาษาไทย 100%) หรือไฟล์ **JSON** สำรองข้อมูล
+- 🔄 **Recurring Tasks:** รองรับการตั้งค่ารายการทำซ้ำ (ทุกวัน, ทุกสัปดาห์, ทุกเดือน)
 - 🗂️ **Custom Categories:** ผู้ใช้สร้างและจัดการหมวดหมู่ได้เอง 100% พร้อมเลือกไอคอนและสีประจำหมวดหมู่
-- 🔍 **Search & Filter:** ระบบค้นหาแบบเรียลไทม์ และฟิลเตอร์ตามหมวดหมู่, สถานะ, ความสำคัญ, วันที่, หรือปักหมุด
+- 🔍 **Search & Multi-Filter:** ระบบค้นหาแบบเรียลไทม์ และฟิลเตอร์ตามหมวดหมู่, สถานะ, ความสำคัญ, วันที่, หรือปักหมุด
 - ⭐ **Favorites & Archive:** ปักหมุดรายการสำคัญ และเก็บรายการเข้าคลัง Archive เมื่อไม่ต้องการให้แสดงในหน้าหลัก
 
 ---
@@ -19,18 +28,18 @@
 
 ### Frontend
 - **Framework:** React.js 18 + Vite + TypeScript
-- **Styling:** Tailwind CSS (Modern Clean Slate/Indigo Palette)
+- **Styling:** Tailwind CSS (Class-based Dark Mode + Clean Minimal Palette)
 - **Icons:** Lucide React Icons
 - **HTTP Client:** Axios
 
 ### Backend
 - **Runtime:** Node.js
-- **Web Framework:** Express.js (RESTful Architecture: Routes, Controllers, Services, Models)
+- **Web Framework:** Express.js (Layered Architecture: Routes, Controllers, Services, Models)
 - **Database Driver:** `pg` (node-postgres) พร้อม Connection Pool และ Parameterized Queries ป้องกัน SQL Injection 100%
 
 ### Database
 - **DBMS:** PostgreSQL 17 / 18
-- **Schema & Features:** JSONB สำหรับจัดเก็บและค้นหา Tags, Triggers สำหรับ `updated_at`, Foreign Keys, และ Indexes ประสิทธิภาพสูง
+- **Schema & Features:** ตาราง `categories`, `entries`, `entry_items`, JSONB สำหรับจัดเก็บ Tags, Triggers สำหรับ `updated_at`, Foreign Keys CASCADE, และ GIN/B-Tree Indexes
 
 ---
 
@@ -41,9 +50,9 @@ Personal_Organizer/
 ├── backend/                  # RESTful API Server (Node.js + Express)
 │   ├── src/
 │   │   ├── config/           # Database pool & environment
-│   │   ├── controllers/      # Route controllers
+│   │   ├── controllers/      # Route controllers (Entry, Category, Dashboard)
 │   │   ├── middlewares/      # Error handler & validations
-│   │   ├── models/           # Data access & SQL queries
+│   │   ├── models/           # Data access & SQL queries (entryModel, entryItemModel, categoryModel)
 │   │   ├── routes/           # Express routers
 │   │   ├── scripts/          # Database auto-init script
 │   │   ├── services/         # Business logic
@@ -55,10 +64,11 @@ Personal_Organizer/
 │
 ├── frontend/                 # Client Application (React + Vite + TS)
 │   ├── src/
-│   │   ├── components/       # UI Components & Layouts
+│   │   ├── components/       # UI Components, Layouts, Entries, Dashboard
+│   │   ├── context/          # ToastContext, ThemeContext (Dark Mode)
 │   │   ├── hooks/            # Custom hooks
-│   │   ├── pages/            # App pages
-│   │   ├── services/         # API clients
+│   │   ├── pages/            # Dashboard, AllLists, Categories, Favorites, Archive
+│   │   ├── services/         # API clients (EntryService with Export)
 │   │   ├── types/            # TypeScript interfaces
 │   │   └── index.css         # Tailwind directives & styles
 │   ├── .env.example
@@ -67,8 +77,8 @@ Personal_Organizer/
 │   └── vite.config.ts
 │
 ├── database/                 # PostgreSQL Scripts
-│   ├── schema.sql            # Table definitions, types, triggers, indexes
-│   └── seeds.sql             # Starter categories & sample entries
+│   ├── schema.sql            # Table definitions (entries, entry_items, categories)
+│   └── seeds.sql             # Starter categories, sample entries, and sub-items
 │
 ├── package.json              # Monorepo root scripts
 └── README.md
@@ -76,7 +86,7 @@ Personal_Organizer/
 
 ---
 
-## 🚀 วิธีการติดตั้งและเริ่มต้นใช้งาน (Getting Started)
+## 🚀 วิธีการรันใช้งานระบบ
 
 ### 1. การตั้งค่า Database (PostgreSQL)
 ตรวจสอบการตั้งค่าในไฟล์ `backend/.env`:
@@ -86,25 +96,23 @@ NODE_ENV=development
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=your_postgres_password
+DB_PASSWORD=รหัสผ่าน_PostgreSQL_ของคุณ
 DB_NAME=personal_organizer
 CLIENT_URL=http://localhost:5173
 ```
 
-รันคำสั่งเพื่อสร้างตารางและข้อมูลเริ่มต้นอัตโนมัติ:
+รันคำสั่งเพื่อสร้างตารางและอัปเดต Schema ล่าสุด (รวมถึงตาราง `entry_items`):
 ```bash
 npm run db:init
 ```
-*(หรือสามารถนำไฟล์ `database/schema.sql` และ `database/seeds.sql` ไป Execute ใน pgAdmin / psql โดยตรงได้เช่นกัน)*
 
 ### 2. รัน Backend API
 ```bash
 npm run dev:backend
 # API จะเปิดทำงานที่: http://localhost:5000
-# ทดสอบ Health Check ได้ที่: http://localhost:5000/api/health
 ```
 
-### 3. รัน Frontend Development Server
+### 3. รัน Frontend Web App
 ```bash
 npm run dev:frontend
 # เว็บแอปพลิเคชันจะเปิดที่: http://localhost:5173

@@ -152,8 +152,8 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
         .map((item, idx) => ({
           ...item,
           title: item.title.trim(),
-          amount: item.amount !== '' && item.amount !== null ? parseFloat(String(item.amount)) : 0,
-          quantity: item.quantity !== '' && item.quantity !== null ? parseInt(String(item.quantity), 10) : 1,
+          amount: item.amount != null && String(item.amount) !== '' ? parseFloat(String(item.amount)) : 0,
+          quantity: item.quantity != null && String(item.quantity) !== '' ? parseInt(String(item.quantity), 10) : 1,
           sort_order: idx + 1,
         }));
 

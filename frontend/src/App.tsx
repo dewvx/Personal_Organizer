@@ -3,6 +3,7 @@ import { CategoryService } from './services/categoryService';
 import { EntryService } from './services/entryService';
 import { Category, Entry } from './types';
 import { ToastProvider, useToast } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { BottomNav } from './components/layout/BottomNav';
@@ -90,7 +91,7 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white transition-colors">
       {/* Desktop Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -194,8 +195,10 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <MainApp />
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <MainApp />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
