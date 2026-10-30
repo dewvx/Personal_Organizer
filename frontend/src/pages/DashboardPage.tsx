@@ -151,7 +151,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <Button
             onClick={onOpenNewEntry}
             size="md"
-            className="bg-white text-indigo-900 hover:bg-indigo-50 shadow-none border-none font-semibold text-xs sm:text-sm"
+            className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-950/40 border border-indigo-400/30"
             leftIcon={<Plus className="w-4 h-4 stroke-[2.5]" />}
           >
             สร้างรายการใหม่

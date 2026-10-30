@@ -297,16 +297,14 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
                     เช่น 1. ผัก 50฿, 2. ผลไม้ 100฿ ระบบจะคำนวณยอดเงินรวมให้อัตโนมัติ
                   </p>
                 </div>
-                <Button
+                <button
                   type="button"
-                  variant="secondary"
-                  size="sm"
                   onClick={handleAddSubItem}
-                  className="text-xs bg-white dark:bg-slate-800 shadow-none border-indigo-200 dark:border-indigo-800"
-                  leftIcon={<Plus className="w-3.5 h-3.5" />}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-sm shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
                 >
-                  เพิ่มรายการย่อย
-                </Button>
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>เพิ่มรายการย่อย</span>
+                </button>
               </div>
 
               {subItems.length > 0 && (

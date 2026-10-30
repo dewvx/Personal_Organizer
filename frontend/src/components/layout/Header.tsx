@@ -121,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Button
             size="sm"
             onClick={onOpenNewEntry}
-            className="hidden md:inline-flex"
+            className="hidden md:inline-flex bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-sm shadow-indigo-200 dark:shadow-none font-medium"
             leftIcon={<Plus className="w-4 h-4 stroke-[2.5]" />}
           >
             สร้างรายการ

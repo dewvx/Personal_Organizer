@@ -144,6 +144,7 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
         <Button
           onClick={() => onOpenNewEntry(selectedCategory?.id)}
           size="md"
+          className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium shadow-sm shadow-indigo-200 dark:shadow-none"
           leftIcon={<Plus className="w-4 h-4 stroke-[2.5]" />}
         >
           เพิ่มรายการ
