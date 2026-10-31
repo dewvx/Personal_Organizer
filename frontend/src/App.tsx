@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { CategoryService } from './services/categoryService';
 import { EntryService } from './services/entryService';
+import { AttachmentService } from './services/attachmentService';
 import { Category, Entry } from './types';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -9,23 +10,42 @@ import { Header } from './components/layout/Header';
 import { BottomNav } from './components/layout/BottomNav';
 import { EntryFormModal } from './components/entries/EntryFormModal';
 import { ConfirmModal } from './components/common/ConfirmModal';
+import { PinLockModal } from './components/common/PinLockModal';
+import { QuickCaptureBar } from './components/entries/QuickCaptureBar';
+import { OfflineBanner } from './components/common/OfflineBanner';
+import { AuthService } from './services/authService';
+import { useNetworkSync } from './hooks/useNetworkSync';
 
-// Pages
+// Primary Pages (Eagerly Loaded)
 import { DashboardPage } from './pages/DashboardPage';
 import { AllListsPage } from './pages/AllListsPage';
-import { CalendarViewPage } from './pages/CalendarViewPage';
-import { CategoriesPage } from './pages/CategoriesPage';
-import { FavoritesPage } from './pages/FavoritesPage';
-import { ArchivePage } from './pages/ArchivePage';
-import { ShoppingModeModal } from './components/entries/ShoppingModeModal';
-import { PinLockModal } from './components/common/PinLockModal';
+
+// Secondary Pages (Code-Split / Lazy Loaded)
+const CalendarViewPage = lazy(() => import('./pages/CalendarViewPage').then((m) => ({ default: m.CalendarViewPage })));
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then((m) => ({ default: m.FavoritesPage })));
+const ArchivePage = lazy(() => import('./pages/ArchivePage').then((m) => ({ default: m.ArchivePage })));
+const KanbanBoardPage = lazy(() => import('./pages/KanbanBoardPage').then((m) => ({ default: m.KanbanBoardPage })));
+const GoalsPage = lazy(() => import('./pages/GoalsPage').then((m) => ({ default: m.GoalsPage })));
+
+// Heavy Modals (Lazy Loaded on Demand)
+const ShoppingModeModal = lazy(() => import('./components/entries/ShoppingModeModal').then((m) => ({ default: m.ShoppingModeModal })));
+const ImportModal = lazy(() => import('./components/common/ImportModal').then((m) => ({ default: m.ImportModal })));
+const NotificationSettingsModal = lazy(() => import('./components/common/NotificationSettingsModal').then((m) => ({ default: m.NotificationSettingsModal })));
+const TemplatesModal = lazy(() => import('./components/templates/TemplatesModal').then((m) => ({ default: m.TemplatesModal })));
+const EncryptedBackupModal = lazy(() => import('./components/common/EncryptedBackupModal').then((m) => ({ default: m.EncryptedBackupModal })));
 
 const MainApp: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'all' | 'calendar' | 'categories' | 'favorites' | 'archive'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'all' | 'kanban' | 'goals' | 'calendar' | 'categories' | 'favorites' | 'archive'>('dashboard');
   const [activeCategoryId, setActiveCategoryId] = useState<number | undefined>(undefined);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Offline-First Sync & Network Status (FEAT-D1)
+  const { isOnline, isSyncing, pendingCount, syncNow } = useNetworkSync(() => {
+    setRefreshKey((k) => k + 1);
+  });
   
   // Modals & Mobile Focus States
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
@@ -35,14 +55,38 @@ const MainApp: React.FC = () => {
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shoppingModeEntry, setShoppingModeEntry] = useState<Entry | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isEncryptedBackupModalOpen, setIsEncryptedBackupModalOpen] = useState(false);
 
-  // PIN Lock Security States
-  const [isPinSet, setIsPinSet] = useState<boolean>(() => Boolean(localStorage.getItem('app_pin_code')));
-  const [isLocked, setIsLocked] = useState<boolean>(() => Boolean(localStorage.getItem('app_pin_code')));
+  // PIN Lock Security States (Server-side Bcrypt Hash)
+  const [isPinSet, setIsPinSet] = useState<boolean>(false);
+  const [isLocked, setIsLocked] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pinModalMode, setPinModalMode] = useState<'unlock' | 'set' | 'disable'>('unlock');
 
   const { showToast } = useToast();
+
+  const checkPinStatus = useCallback(async () => {
+    try {
+      localStorage.removeItem('app_pin_code'); // Clean legacy plaintext
+      const status = await AuthService.getPinStatus();
+      setIsPinSet(status.hasPin);
+      if (status.hasPin) {
+        const isUnlockedThisSession = sessionStorage.getItem('app_unlocked') === 'true' && !!sessionStorage.getItem('app_auth_token');
+        setIsLocked(!isUnlockedThisSession);
+      } else {
+        setIsLocked(false);
+      }
+    } catch (err) {
+      console.error('Failed to get PIN status', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkPinStatus();
+  }, [checkPinStatus]);
 
   // Load Categories
   const loadCategories = useCallback(async () => {
@@ -77,14 +121,24 @@ const MainApp: React.FC = () => {
     setIsEntryModalOpen(true);
   };
 
-  const handleEntrySubmit = async (data: Partial<Entry>) => {
+  const handleEntrySubmit = async (data: Partial<Entry>, files?: File[]) => {
+    let savedEntry: Entry;
     if (editingEntry) {
-      await EntryService.update(editingEntry.id, data);
+      savedEntry = await EntryService.update(editingEntry.id, data);
       showToast('อัปเดตรายการเรียบร้อย');
     } else {
-      await EntryService.create(data);
+      savedEntry = await EntryService.create(data);
       showToast('สร้างรายการใหม่สำเร็จ');
     }
+
+    if (files && files.length > 0 && savedEntry?.id) {
+      try {
+        await AttachmentService.upload(savedEntry.id, files);
+      } catch (attErr) {
+        showToast('บันทึกรายการสำเร็จ แต่เกิดข้อผิดพลาดในการอัปโหลดไฟล์แนบ', 'error');
+      }
+    }
+
     loadCategories();
     setRefreshKey((k) => k + 1);
   };
@@ -95,10 +149,12 @@ const MainApp: React.FC = () => {
       setIsDeleting(true);
       await EntryService.delete(deletingEntryId);
       setDeletingEntryId(null);
-      // รีโหลดหน้าเว็บให้อัตโนมัติทันทีตามความต้องการของผู้ใช้
-      window.location.reload();
+      showToast('ลบรายการเรียบร้อย');
+      loadCategories();
+      setRefreshKey((k) => k + 1);
     } catch (err) {
       showToast('ไม่สามารถลบรายการได้', 'error');
+    } finally {
       setIsDeleting(false);
     }
   };
@@ -133,10 +189,19 @@ const MainApp: React.FC = () => {
         categories={categories}
         activeCategoryId={activeCategoryId}
         onOpenNewEntry={() => handleOpenNewEntry()}
+        onOpenTemplates={() => setIsTemplatesModalOpen(true)}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
+        {/* Offline Banner (FEAT-D1) */}
+        <OfflineBanner
+          isOnline={isOnline}
+          isSyncing={isSyncing}
+          pendingCount={pendingCount}
+          onSyncNow={syncNow}
+        />
+
         {/* Top Header */}
         <Header
           searchQuery={searchQuery}
@@ -147,7 +212,12 @@ const MainApp: React.FC = () => {
             }
           }}
           onOpenNewEntry={() => handleOpenNewEntry()}
+          onOpenImport={() => setIsImportModalOpen(true)}
+          onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+          onOpenEncryptedBackup={() => setIsEncryptedBackupModalOpen(true)}
           onLockApp={() => {
+            sessionStorage.removeItem('app_unlocked');
+            sessionStorage.removeItem('app_auth_token');
             setIsLocked(true);
             setPinModalMode('unlock');
             setIsPinModalOpen(true);
@@ -157,73 +227,112 @@ const MainApp: React.FC = () => {
             setIsPinModalOpen(true);
           }}
           isPinSet={isPinSet}
+          onOpenNotifications={() => setIsNotificationModalOpen(true)}
         />
 
         {/* Page Container */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-          {currentTab === 'dashboard' && (
-            <DashboardPage
-              key={`dashboard_${refreshKey}`}
-              onOpenNewEntry={() => handleOpenNewEntry()}
-              onNavigateTab={(tab, catId) => handleSelectTab(tab, catId)}
-              onEditEntry={handleEditEntry}
-              onDeleteEntry={(id) => setDeletingEntryId(id)}
-              onDuplicate={handleDuplicateEntry}
-              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
-            />
-          )}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+          {/* Frictionless 3-Second Quick Capture Bar */}
+          <QuickCaptureBar
+            categories={categories}
+            onEntryCreated={() => {
+              loadCategories();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
 
-          {currentTab === 'all' && (
-            <AllListsPage
-              key={`all_${refreshKey}`}
-              categories={categories}
-              searchQuery={searchQuery}
-              initialCategoryId={activeCategoryId}
-              onOpenNewEntry={handleOpenNewEntry}
-              onEditEntry={handleEditEntry}
-              onDeleteEntry={(id) => setDeletingEntryId(id)}
-              onDuplicate={handleDuplicateEntry}
-              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
-            />
-          )}
+          <Suspense fallback={
+            <div className="flex justify-center items-center py-20 text-slate-400">
+              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          }>
+            {currentTab === 'dashboard' && (
+              <DashboardPage
+                key={`dashboard_${refreshKey}`}
+                onOpenNewEntry={() => handleOpenNewEntry()}
+                onNavigateTab={(tab, catId) => handleSelectTab(tab, catId)}
+                onEditEntry={handleEditEntry}
+                onDeleteEntry={(id) => setDeletingEntryId(id)}
+                onDuplicate={handleDuplicateEntry}
+                onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
+              />
+            )}
 
-          {currentTab === 'calendar' && (
-            <CalendarViewPage
-              key={`calendar_${refreshKey}`}
-              onOpenNewEntry={(datePreset) => handleOpenNewEntry(undefined, datePreset)}
-              onEditEntry={handleEditEntry}
-              onDeleteEntry={(id) => setDeletingEntryId(id)}
-              onDuplicate={handleDuplicateEntry}
-              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
-            />
-          )}
+            {currentTab === 'all' && (
+              <AllListsPage
+                key={`all_${refreshKey}`}
+                categories={categories}
+                searchQuery={searchQuery}
+                initialCategoryId={activeCategoryId}
+                onOpenNewEntry={handleOpenNewEntry}
+                onEditEntry={handleEditEntry}
+                onDeleteEntry={(id) => setDeletingEntryId(id)}
+                onDuplicate={handleDuplicateEntry}
+                onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
+              />
+            )}
 
-          {currentTab === 'categories' && (
-            <CategoriesPage
-              key={`categories_${refreshKey}`}
-              categories={categories}
-              onRefreshCategories={loadCategories}
-              onViewCategoryEntries={(catId) => handleSelectTab('all', catId)}
-            />
-          )}
+            {currentTab === 'kanban' && (
+              <KanbanBoardPage
+                key={`kanban_${refreshKey}`}
+                categories={categories}
+                onOpenNewEntry={handleOpenNewEntry}
+                onEditEntry={handleEditEntry}
+                onDeleteEntry={(id) => setDeletingEntryId(id)}
+                onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
+              />
+            )}
 
-          {currentTab === 'favorites' && (
-            <FavoritesPage
-              key={`favorites_${refreshKey}`}
-              onEditEntry={handleEditEntry}
-              onDeleteEntry={(id) => setDeletingEntryId(id)}
-              onNavigateAll={() => handleSelectTab('all')}
-              onDuplicate={handleDuplicateEntry}
-              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
-            />
-          )}
+            {currentTab === 'goals' && (
+              <GoalsPage
+                key={`goals_${refreshKey}`}
+                onOpenEntryForm={(entry) => {
+                  if (entry) {
+                    setEditingEntry(entry);
+                  }
+                  setIsEntryModalOpen(true);
+                }}
+              />
+            )}
 
-          {currentTab === 'archive' && (
-            <ArchivePage
-              key={`archive_${refreshKey}`}
-              onNavigateAll={() => handleSelectTab('all')}
-            />
-          )}
+            {currentTab === 'calendar' && (
+              <CalendarViewPage
+                key={`calendar_${refreshKey}`}
+                onOpenNewEntry={(datePreset) => handleOpenNewEntry(undefined, datePreset)}
+                onEditEntry={handleEditEntry}
+                onDeleteEntry={(id) => setDeletingEntryId(id)}
+                onDuplicate={handleDuplicateEntry}
+                onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
+              />
+            )}
+
+            {currentTab === 'categories' && (
+              <CategoriesPage
+                key={`categories_${refreshKey}`}
+                categories={categories}
+                onRefreshCategories={loadCategories}
+                onViewCategoryEntries={(catId) => handleSelectTab('all', catId)}
+              />
+            )}
+
+            {currentTab === 'favorites' && (
+              <FavoritesPage
+                key={`favorites_${refreshKey}`}
+                onEditEntry={handleEditEntry}
+                onDeleteEntry={(id) => setDeletingEntryId(id)}
+                onNavigateAll={() => handleSelectTab('all')}
+                onDuplicate={handleDuplicateEntry}
+                onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
+              />
+            )}
+
+            {currentTab === 'archive' && (
+              <ArchivePage
+                key={`archive_${refreshKey}`}
+                onNavigateAll={() => handleSelectTab('all')}
+              />
+            )}
+          </Suspense>
         </main>
       </div>
 
@@ -249,24 +358,15 @@ const MainApp: React.FC = () => {
         defaultDate={defaultEntryDate}
       />
 
-      {/* Shopping Focus Mode Modal */}
-      {shoppingModeEntry && (
-        <ShoppingModeModal
-          isOpen={!!shoppingModeEntry}
-          entry={shoppingModeEntry}
-          onClose={() => setShoppingModeEntry(null)}
-          onToggleItem={handleToggleShoppingItem}
-        />
-      )}
-
       {/* 4-digit PIN Passcode Lock Screen Modal */}
       <PinLockModal
         isOpen={isLocked || isPinModalOpen}
         mode={isLocked ? 'unlock' : pinModalMode}
         onSuccess={() => {
+          sessionStorage.setItem('app_unlocked', 'true');
           setIsLocked(false);
           setIsPinModalOpen(false);
-          setIsPinSet(Boolean(localStorage.getItem('app_pin_code')));
+          checkPinStatus();
           showToast(
             isLocked
               ? 'ปลดล็อกเรียบร้อย'
@@ -292,6 +392,58 @@ const MainApp: React.FC = () => {
         onConfirm={handleConfirmDeleteEntry}
         onCancel={() => setDeletingEntryId(null)}
       />
+
+      {/* Lazy Loaded Heavy Modals (Loaded only when opened) */}
+      <Suspense fallback={null}>
+        {shoppingModeEntry && (
+          <ShoppingModeModal
+            isOpen={!!shoppingModeEntry}
+            entry={shoppingModeEntry}
+            onClose={() => setShoppingModeEntry(null)}
+            onToggleItem={handleToggleShoppingItem}
+          />
+        )}
+
+        {isImportModalOpen && (
+          <ImportModal
+            isOpen={isImportModalOpen}
+            onClose={() => setIsImportModalOpen(false)}
+            onSuccess={() => {
+              loadCategories();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
+        )}
+
+        {isNotificationModalOpen && (
+          <NotificationSettingsModal
+            isOpen={isNotificationModalOpen}
+            onClose={() => setIsNotificationModalOpen(false)}
+          />
+        )}
+
+        {isTemplatesModalOpen && (
+          <TemplatesModal
+            isOpen={isTemplatesModalOpen}
+            onClose={() => setIsTemplatesModalOpen(false)}
+            onTemplateApplied={() => {
+              loadCategories();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
+        )}
+
+        {isEncryptedBackupModalOpen && (
+          <EncryptedBackupModal
+            isOpen={isEncryptedBackupModalOpen}
+            onClose={() => setIsEncryptedBackupModalOpen(false)}
+            onRestoreSuccess={() => {
+              loadCategories();
+              setRefreshKey((k) => k + 1);
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

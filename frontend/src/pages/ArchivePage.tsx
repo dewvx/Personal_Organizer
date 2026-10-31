@@ -55,9 +55,11 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({ onNavigateAll }) => {
       setIsDeleting(true);
       await EntryService.delete(deletingId);
       setDeletingId(null);
-      window.location.reload();
+      showToast('ลบรายการถาวรเรียบร้อย');
+      loadArchived();
     } catch (err) {
       showToast('ไม่สามารถลบรายการได้', 'error');
+    } finally {
       setIsDeleting(false);
     }
   };
@@ -65,11 +67,11 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({ onNavigateAll }) => {
   return (
     <div className="space-y-5 animate-in fade-in duration-150">
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Archive className="w-5 h-5 text-slate-600" />
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Archive className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           <span>คลังเก็บเอกสาร (Archive)</span>
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           รายการที่คุณจัดเก็บไว้เพื่อลดความแออัด สามารถนำกลับคืนมาใช้งานได้ทุกเมื่อ
         </p>
       </div>
@@ -92,7 +94,7 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({ onNavigateAll }) => {
           {entries.map((entry) => (
             <Card
               key={entry.id}
-              className="flex items-center justify-between gap-3 p-4 sm:p-5 bg-white/90 border-slate-200"
+              className="flex items-center justify-between gap-3 p-4 sm:p-5 bg-white/90 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -109,11 +111,11 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({ onNavigateAll }) => {
                       <span>{entry.category_name}</span>
                     </span>
                   )}
-                  <span className="text-[11px] text-slate-400">บันทึกเมื่อ {formatDate(entry.entry_date)}</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">บันทึกเมื่อ {formatDate(entry.entry_date)}</span>
                 </div>
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 truncate">{entry.title}</h3>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 truncate">{entry.title}</h3>
                 {entry.description && (
-                  <p className="text-xs text-slate-500 truncate mt-0.5">{entry.description}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{entry.description}</p>
                 )}
               </div>
 
@@ -122,14 +124,14 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({ onNavigateAll }) => {
                   size="sm"
                   variant="secondary"
                   onClick={() => handleRestore(entry.id)}
-                  leftIcon={<RotateCcw className="w-3.5 h-3.5 text-indigo-600" />}
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
                 >
                   <span className="hidden sm:inline">นำกลับคืน</span>
                 </Button>
 
                 <button
                   onClick={() => setDeletingId(entry.id)}
-                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
                   title="ลบถาวร"
                 >
                   <Trash2 className="w-4 h-4" />

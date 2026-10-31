@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Delete, ShieldCheck, X } from 'lucide-react';
+import { Lock, Delete, ShieldCheck, X, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '../../utils/haptics';
+import { AuthService } from '../../services/authService';
 
 interface PinLockModalProps {
   isOpen: boolean;
@@ -19,19 +20,20 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setPin('');
     setConfirmPin('');
     setStep('enter');
     setError('');
+    setIsLoading(false);
   }, [isOpen, mode]);
 
   if (!isOpen) return null;
 
-  const currentSavedPin = localStorage.getItem('app_pin_code');
-
-  const handleKeyPress = (num: string) => {
+  const handleKeyPress = async (num: string) => {
+    if (isLoading) return;
     triggerHaptic('light');
     setError('');
 
@@ -40,13 +42,23 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
       if (nextPin.length <= 4) {
         setPin(nextPin);
         if (nextPin.length === 4) {
-          if (nextPin === currentSavedPin) {
-            triggerHaptic('success');
-            onSuccess();
-          } else {
+          try {
+            setIsLoading(true);
+            const res = await AuthService.verifyPin(nextPin);
+            if (res.verified) {
+              triggerHaptic('success');
+              onSuccess();
+            } else {
+              triggerHaptic('warning');
+              setError('รหัส PIN ไม่ถูกต้อง');
+              setTimeout(() => setPin(''), 500);
+            }
+          } catch (err: any) {
             triggerHaptic('warning');
-            setError('รหัส PIN ไม่ถูกต้อง');
+            setError(err.response?.data?.message || 'รหัส PIN ไม่ถูกต้อง');
             setTimeout(() => setPin(''), 500);
+          } finally {
+            setIsLoading(false);
           }
         }
       }
@@ -65,9 +77,22 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
           setConfirmPin(nextConfirm);
           if (nextConfirm.length === 4) {
             if (nextConfirm === pin) {
-              localStorage.setItem('app_pin_code', pin);
-              triggerHaptic('success');
-              onSuccess();
+              try {
+                setIsLoading(true);
+                await AuthService.setPin(pin);
+                triggerHaptic('success');
+                onSuccess();
+              } catch (err: any) {
+                triggerHaptic('warning');
+                setError(err.response?.data?.message || 'ไม่สามารถตั้งรหัส PIN ได้');
+                setTimeout(() => {
+                  setConfirmPin('');
+                  setPin('');
+                  setStep('enter');
+                }, 800);
+              } finally {
+                setIsLoading(false);
+              }
             } else {
               triggerHaptic('warning');
               setError('รหัสยืนยันไม่ตรงกัน โปรดลองใหม่');
@@ -85,14 +110,17 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
       if (nextPin.length <= 4) {
         setPin(nextPin);
         if (nextPin.length === 4) {
-          if (nextPin === currentSavedPin) {
-            localStorage.removeItem('app_pin_code');
+          try {
+            setIsLoading(true);
+            await AuthService.disablePin(nextPin);
             triggerHaptic('success');
             onSuccess();
-          } else {
+          } catch (err: any) {
             triggerHaptic('warning');
-            setError('รหัส PIN เดิมไม่ถูกต้อง');
+            setError(err.response?.data?.message || 'รหัส PIN เดิมไม่ถูกต้อง');
             setTimeout(() => setPin(''), 500);
+          } finally {
+            setIsLoading(false);
           }
         }
       }
@@ -100,6 +128,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
   };
 
   const handleDelete = () => {
+    if (isLoading) return;
     triggerHaptic('light');
     if (mode === 'set' && step === 'confirm') {
       setConfirmPin((prev) => prev.slice(0, -1));
@@ -115,6 +144,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
       {onCancel && mode !== 'unlock' && (
         <button
           onClick={onCancel}
+          disabled={isLoading}
           className="absolute top-6 right-6 text-slate-400 hover:text-white p-2 rounded-xl"
         >
           <X className="w-6 h-6" />
@@ -123,7 +153,13 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
 
       <div className="w-full max-w-xs text-center space-y-6">
         <div className="w-16 h-16 rounded-3xl bg-indigo-600/30 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto shadow-lg shadow-indigo-950">
-          {mode === 'set' ? <ShieldCheck className="w-8 h-8" /> : <Lock className="w-8 h-8" />}
+          {isLoading ? (
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          ) : mode === 'set' ? (
+            <ShieldCheck className="w-8 h-8" />
+          ) : (
+            <Lock className="w-8 h-8" />
+          )}
         </div>
 
         <div>
@@ -139,7 +175,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
           <p className="text-xs text-slate-400 mt-1">
             {mode === 'unlock'
               ? 'กรุณากรอกรหัสผ่านเพื่อเข้าใช้งาน'
-              : 'ใช้สำหรับปกป้องข้อมูลส่วนตัวของคุณ'}
+              : 'ใช้สำหรับปกป้องข้อมูลส่วนตัวของคุณบนเซิร์ฟเวอร์'}
           </p>
         </div>
 
@@ -167,14 +203,16 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
             <button
               key={digit}
               type="button"
+              disabled={isLoading}
               onClick={() => handleKeyPress(digit)}
-              className="h-16 rounded-2xl bg-slate-900 border border-slate-800 text-xl font-bold text-white hover:bg-slate-800 active:scale-95 transition-all shadow-sm flex items-center justify-center"
+              className="h-16 rounded-2xl bg-slate-900 border border-slate-800 text-xl font-bold text-white hover:bg-slate-800 active:scale-95 disabled:opacity-50 transition-all shadow-sm flex items-center justify-center"
             >
               {digit}
             </button>
           ))}
           <button
             type="button"
+            disabled={isLoading}
             onClick={() => {
               setPin('');
               setConfirmPin('');
@@ -186,15 +224,17 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
           </button>
           <button
             type="button"
+            disabled={isLoading}
             onClick={() => handleKeyPress('0')}
-            className="h-16 rounded-2xl bg-slate-900 border border-slate-800 text-xl font-bold text-white hover:bg-slate-800 active:scale-95 transition-all shadow-sm flex items-center justify-center"
+            className="h-16 rounded-2xl bg-slate-900 border border-slate-800 text-xl font-bold text-white hover:bg-slate-800 active:scale-95 disabled:opacity-50 transition-all shadow-sm flex items-center justify-center"
           >
             0
           </button>
           <button
             type="button"
+            disabled={isLoading}
             onClick={handleDelete}
-            className="h-16 rounded-2xl bg-slate-900/40 text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center active:scale-95 transition-all"
+            className="h-16 rounded-2xl bg-slate-900/40 text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center active:scale-95 disabled:opacity-50 transition-all"
           >
             <Delete className="w-5 h-5" />
           </button>

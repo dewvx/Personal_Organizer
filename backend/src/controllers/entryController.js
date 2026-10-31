@@ -212,6 +212,20 @@ const EntryController = {
       next(err);
     }
   },
+
+  async importData(req, res, next) {
+    try {
+      const { entries, strategy = 'append' } = req.body;
+      if (!Array.isArray(entries) || entries.length === 0) {
+        return errorResponse(res, 'กรุณาระบุข้อมูลรายการที่ต้องการนำเข้าในรูปแบบ Array', 400);
+      }
+
+      const result = await EntryService.importEntries(entries, strategy);
+      return successResponse(res, result, 'นำเข้าและกู้คืนข้อมูลสำเร็จ');
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 module.exports = EntryController;

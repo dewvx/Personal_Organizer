@@ -30,7 +30,7 @@ export const EntryFilterBar: React.FC<EntryFilterBarProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-sm space-y-3">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 shadow-sm space-y-3 transition-colors">
       {/* Top Filter Row: Category Pills & Status Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Status Pills */}
@@ -43,8 +43,8 @@ export const EntryFilterBar: React.FC<EntryFilterBarProps> = ({
                 onClick={() => onChange({ ...filters, status: tab.id === 'all' ? undefined : tab.id, page: 1 })}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-none'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700/70'
                 }`}
               >
                 {tab.label}
@@ -63,8 +63,8 @@ export const EntryFilterBar: React.FC<EntryFilterBarProps> = ({
                 onClick={() => onChange({ ...filters, due_status: due.id === 'all' ? undefined : (due.id as any), page: 1 })}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-500 hover:bg-slate-100'
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 {due.label}
@@ -75,15 +75,15 @@ export const EntryFilterBar: React.FC<EntryFilterBarProps> = ({
       </div>
 
       {/* Secondary Controls: Category Selector & Sorting */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           {/* Category Dropdown */}
           <div className="flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <Filter className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
             <select
               value={filters.category_id || ''}
               onChange={(e) => onChange({ ...filters, category_id: e.target.value || undefined, page: 1 })}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500"
             >
               <option value="">ทุกหมวดหมู่ ({categories.length})</option>
               {categories.map((c) => (
@@ -98,7 +98,7 @@ export const EntryFilterBar: React.FC<EntryFilterBarProps> = ({
           <select
             value={filters.priority || ''}
             onChange={(e) => onChange({ ...filters, priority: e.target.value || undefined, page: 1 })}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500"
           >
             <option value="">ทุกระดับความสำคัญ</option>
             <option value="urgent">ด่วนมาก</option>
@@ -111,18 +111,18 @@ export const EntryFilterBar: React.FC<EntryFilterBarProps> = ({
         {/* Sort & Count */}
         <div className="flex items-center gap-3">
           {totalCount !== undefined && (
-            <span className="text-slate-400 font-medium">พบ {totalCount} รายการ</span>
+            <span className="text-slate-400 dark:text-slate-500 font-medium">พบ {totalCount} รายการ</span>
           )}
 
           <div className="flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
             <select
               value={`${filters.sort_by || 'entry_date'}_${filters.sort_order || 'DESC'}`}
               onChange={(e) => {
                 const [sort_by, sort_order] = e.target.value.split('_');
                 onChange({ ...filters, sort_by: sort_by as any, sort_order: sort_order as any });
               }}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500"
             >
               <option value="entry_date_DESC">วันที่บันทึก (ใหม่ - เก่า)</option>
               <option value="entry_date_ASC">วันที่บันทึก (เก่า - ใหม่)</option>

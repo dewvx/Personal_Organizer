@@ -14,8 +14,14 @@ import {
   ListPlus,
   Mic,
   MicOff,
+  Target,
+  Paperclip,
+  Settings2,
 } from 'lucide-react';
-import { Category, Entry, EntryItem, EntryPriority, EntryStatus, RecurringInterval } from '../../types';
+import { Category, Entry, EntryItem, EntryPriority, EntryStatus, RecurringInterval, Goal, EntryAttachment } from '../../types';
+import { GoalService } from '../../services/goalService';
+import { AttachmentService } from '../../services/attachmentService';
+import { AttachmentUploader } from './AttachmentUploader';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { formatCurrency } from '../../utils/formatters';
@@ -25,7 +31,7 @@ import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 interface EntryFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<Entry>) => Promise<void>;
+  onSubmit: (data: Partial<Entry>, files?: File[]) => Promise<void>;
   initialData?: Entry | null;
   categories: Category[];
   defaultCategoryId?: number;
@@ -44,6 +50,8 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState<number | ''>('');
+  const [goalId, setGoalId] = useState<number | ''>('');
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [entryDate, setEntryDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [status, setStatus] = useState<EntryStatus>('pending');
@@ -56,6 +64,13 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Attachments & Slips state (FEAT-B2)
+  const [existingAttachments, setExistingAttachments] = useState<EntryAttachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+  // Category Custom Values (FEAT-B4)
+  const [customValues, setCustomValues] = useState<Record<string, any>>({});
 
   // Dynamic Sub-items state
   const [subItems, setSubItems] = useState<EntryItem[]>([]);
@@ -73,10 +88,19 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
     });
 
   useEffect(() => {
+    if (isOpen) {
+      GoalService.getAll('active')
+        .then((data) => setGoals(data))
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || '');
       setDescription(initialData.description || '');
       setCategoryId(initialData.category_id || '');
+      setGoalId(initialData.goal_id || '');
       setEntryDate(initialData.entry_date ? String(initialData.entry_date).split('T')[0] : getTodayDateString());
       setDueDate(initialData.due_date ? String(initialData.due_date).split('T')[0] : '');
       setStatus(initialData.status || 'pending');
@@ -87,18 +111,25 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
       setTagsInput(Array.isArray(initialData.tags) ? initialData.tags.join(', ') : '');
       setIsFavorite(initialData.is_favorite || false);
       setSubItems(initialData.items && initialData.items.length > 0 ? initialData.items : []);
+      setExistingAttachments(initialData.attachments || []);
+      setCustomValues(initialData.custom_values || {});
+      setPendingFiles([]);
       setShowAdvanced(
         !!(
           initialData.amount ||
           initialData.quantity ||
           (initialData.tags && initialData.tags.length > 0) ||
-          initialData.recurring !== 'none'
+          initialData.recurring !== 'none' ||
+          initialData.goal_id ||
+          (initialData.attachments && initialData.attachments.length > 0) ||
+          (initialData.custom_values && Object.keys(initialData.custom_values).length > 0)
         )
       );
     } else {
       setTitle('');
       setDescription('');
       setCategoryId(defaultCategoryId || (categories[0]?.id || ''));
+      setGoalId('');
       setEntryDate(defaultDate || getTodayDateString());
       setDueDate('');
       setStatus('pending');
@@ -109,10 +140,22 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
       setTagsInput('');
       setIsFavorite(false);
       setSubItems([]);
+      setExistingAttachments([]);
+      setCustomValues({});
+      setPendingFiles([]);
       setShowAdvanced(false);
     }
     setError('');
   }, [initialData, isOpen, defaultCategoryId, defaultDate, categories]);
+
+  const handleDeleteExistingAttachment = async (attachmentId: number) => {
+    try {
+      await AttachmentService.delete(attachmentId);
+      setExistingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (err: any) {
+      setError('ไม่สามารถลบไฟล์แนบได้');
+    }
+  };
 
   // Sub-items handlers
   const handleAddSubItem = () => {
@@ -142,6 +185,9 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
   // Calculated sum from sub-items
   const itemsSum = subItems.reduce((acc, item) => acc + (parseFloat(String(item.amount || 0)) || 0), 0);
   const itemsQty = subItems.reduce((acc, item) => acc + (parseInt(String(item.quantity || 1), 10) || 1), 0);
+
+  const selectedCategory = categories.find((c) => c.id === Number(categoryId));
+  const customFields = selectedCategory?.custom_schema || [];
 
   if (!isOpen) return null;
 
@@ -179,6 +225,7 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
         title: title.trim(),
         description: description.trim() || null,
         category_id: categoryId ? Number(categoryId) : null,
+        goal_id: goalId ? Number(goalId) : null,
         entry_date: entryDate || getTodayDateString(),
         due_date: dueDate || null,
         status,
@@ -188,8 +235,9 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
         tags: parsedTags,
         is_favorite: isFavorite,
         recurring,
+        custom_values: customValues,
         items: validSubItems,
-      });
+      }, pendingFiles);
 
       onClose();
     } catch (err: any) {
@@ -259,8 +307,8 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
               />
             </div>
 
-            {/* Category & Status & Priority */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Category & Linked Goal */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">หมวดหมู่</label>
                 <select
@@ -277,6 +325,79 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+                  <Target className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>ผูกกับเป้าหมาย (Linked Goal)</span>
+                </label>
+                <select
+                  value={goalId}
+                  onChange={(e) => setGoalId(e.target.value ? Number(e.target.value) : '')}
+                  className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 transition-colors focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="">(ไม่ผูกกับเป้าหมาย)</option>
+                  {goals.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.title} ({g.status === 'active' ? 'กำลังทำ' : g.status === 'achieved' ? 'สำเร็จ' : g.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Dynamic Custom Metadata Fields (FEAT-B4) */}
+            {customFields.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 space-y-3 animate-in fade-in duration-100">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                  <Settings2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>ข้อมูลเฉพาะของหมวดหมู่ "{selectedCategory?.name}"</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {customFields.map((field) => (
+                    <div key={field.id} className="space-y-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {field.name} {field.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      {field.type === 'select' ? (
+                        <select
+                          value={customValues[field.id] || ''}
+                          onChange={(e) => setCustomValues({ ...customValues, [field.id]: e.target.value })}
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500"
+                        >
+                          <option value="">-- เลือก --</option>
+                          {field.options?.map((opt, i) => (
+                            <option key={i} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.type === 'boolean' ? (
+                        <label className="flex items-center gap-2 cursor-pointer pt-1">
+                          <input
+                            type="checkbox"
+                            checked={!!customValues[field.id]}
+                            onChange={(e) => setCustomValues({ ...customValues, [field.id]: e.target.checked })}
+                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs text-slate-700 dark:text-slate-300">ใช่ / ผ่าน</span>
+                        </label>
+                      ) : (
+                        <input
+                          type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                          value={customValues[field.id] || ''}
+                          onChange={(e) => setCustomValues({ ...customValues, [field.id]: e.target.value })}
+                          placeholder={`ระบุ ${field.name}...`}
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Status & Priority */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">สถานะ</label>
                 <select
@@ -495,6 +616,23 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 transition-colors focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+              />
+            </div>
+
+            {/* Attachments & Slips Section (FEAT-B2) */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>แนบรูปภาพใบเสร็จ / สลิปโอนเงิน (Receipts & Slips)</span>
+              </label>
+
+              <AttachmentUploader
+                existingAttachments={existingAttachments}
+                pendingFiles={pendingFiles}
+                onAddPendingFiles={(files) => setPendingFiles((prev) => [...prev, ...files])}
+                onRemovePendingFile={(idx) => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
+                onDeleteExistingAttachment={handleDeleteExistingAttachment}
+                disabled={isSubmitting}
               />
             </div>
 

@@ -63,10 +63,15 @@ async function initDatabase() {
     }
 
     if (fs.existsSync(seedsPath)) {
-      console.log('Executing seeds.sql...');
-      const seedsSql = fs.readFileSync(seedsPath, 'utf8');
-      await targetPool.query(seedsSql);
-      console.log('✅ Starter categories and sample entries inserted successfully.');
+      const countRes = await targetPool.query('SELECT COUNT(*)::int AS count FROM entries');
+      if (countRes.rows[0].count === 0) {
+        console.log('Executing seeds.sql...');
+        const seedsSql = fs.readFileSync(seedsPath, 'utf8');
+        await targetPool.query(seedsSql);
+        console.log('✅ Starter categories and sample entries inserted successfully.');
+      } else {
+        console.log('ℹ️ Entries already exist in database. Skipping seeds.sql to prevent duplicate data.');
+      }
     }
 
     console.log('🎉 Database initialization complete!');

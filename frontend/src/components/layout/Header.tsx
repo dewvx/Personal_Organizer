@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Sparkles, Plus, Calendar, Sun, Moon, Download, FileSpreadsheet, FileJson, Lock, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Search, Sparkles, Plus, Calendar, Sun, Moon, Download, UploadCloud, FileSpreadsheet, FileJson, Lock, ShieldCheck, ShieldAlert, Bell } from 'lucide-react';
 import { Button } from '../common/Button';
 import { useTheme } from '../../context/ThemeContext';
 import { EntryService } from '../../services/entryService';
@@ -9,18 +9,26 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onOpenNewEntry: () => void;
+  onOpenImport?: () => void;
   onLockApp?: () => void;
   onConfigurePin?: (mode: 'set' | 'disable') => void;
   isPinSet?: boolean;
+  onOpenNotifications?: () => void;
+  onOpenTemplates?: () => void;
+  onOpenEncryptedBackup?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onOpenNewEntry,
+  onOpenImport,
   onLockApp,
   onConfigurePin,
   isPinSet,
+  onOpenNotifications,
+  onOpenTemplates,
+  onOpenEncryptedBackup,
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const { showToast } = useToast();
@@ -108,6 +116,31 @@ export const Header: React.FC<HeaderProps> = ({
                     <FileJson className="w-4 h-4 text-indigo-600" />
                     <span>สำรองข้อมูลแบบ JSON</span>
                   </button>
+                  {onOpenImport && (
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        onOpenImport();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                    >
+                      <UploadCloud className="w-4 h-4 text-amber-500" />
+                      <span>นำเข้าและกู้คืน (Import)</span>
+                    </button>
+                  )}
+
+                  {onOpenEncryptedBackup && (
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        onOpenEncryptedBackup();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    >
+                      <Lock className="w-4 h-4 text-indigo-500" />
+                      <span>สำรอง/กู้คืนเข้ารหัส AES-256</span>
+                    </button>
+                  )}
 
                   <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
                   <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -140,6 +173,29 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
           </div>
+
+          {/* Templates Modal Trigger Button */}
+          {onOpenTemplates && (
+            <button
+              onClick={onOpenTemplates}
+              title="คลังเทมเพลตมาตรฐาน (Life Templates)"
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span className="hidden xl:inline text-xs font-medium text-slate-700 dark:text-slate-300">เทมเพลต</span>
+            </button>
+          )}
+
+          {/* Notification Settings Button */}
+          {onOpenNotifications && (
+            <button
+              onClick={onOpenNotifications}
+              title="การแจ้งเตือน (Push Notifications)"
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Quick Lock / Set PIN Button */}
           <button

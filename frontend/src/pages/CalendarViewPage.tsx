@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -38,22 +38,40 @@ export const CalendarViewPage: React.FC<CalendarViewPageProps> = ({
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Load entries for calendar mapping
-  const loadCalendarEntries = async () => {
+  // Load entries for calendar mapping based on visible month range
+  const loadCalendarEntries = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await EntryService.getAll({ is_archived: false, limit: 100 });
+      // Cover the month range plus buffer days for calendar grid padding
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+
+      const bufferStart = new Date(firstDayOfMonth);
+      bufferStart.setDate(bufferStart.getDate() - 7);
+      const bufferEnd = new Date(lastDayOfMonth);
+      bufferEnd.setDate(bufferEnd.getDate() + 7);
+
+      const start_date = `${bufferStart.getFullYear()}-${String(bufferStart.getMonth() + 1).padStart(2, '0')}-${String(bufferStart.getDate()).padStart(2, '0')}`;
+      const end_date = `${bufferEnd.getFullYear()}-${String(bufferEnd.getMonth() + 1).padStart(2, '0')}-${String(bufferEnd.getDate()).padStart(2, '0')}`;
+
+      const res = await EntryService.getAll({
+        is_archived: false,
+        start_date,
+        end_date,
+        calendar_mode: true,
+        limit: 1000,
+      });
       setAllEntries(res.entries);
     } catch (err) {
       console.error('Failed to load calendar entries', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [year, month]);
 
   useEffect(() => {
     loadCalendarEntries();
-  }, []);
+  }, [loadCalendarEntries]);
 
   const handleToggleStatus = async (id: number, currentStatus: Entry['status']) => {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';

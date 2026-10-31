@@ -14,5 +14,21 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "จดด่วน 3 วินาที",
+      "short_name": "จดด่วน",
+      "description": "เปิดกล่องบันทึกข้อมูลด่วนทันที",
+      "url": "/?action=quick_entry",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "กระดานคัมบัง (Kanban)",
+      "short_name": "คัมบัง",
+      "description": "ดูสถานะงานทั้งหมด",
+      "url": "/?tab=kanban",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
   ]
 }

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./src/app');
 const { pool } = require('./src/config/database');
+const SchedulerService = require('./src/services/schedulerService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -17,11 +18,14 @@ pool.query('SELECT NOW()', (err, res) => {
 const server = app.listen(PORT, () => {
   console.log(`🚀 Personal Organizer Backend running on http://localhost:${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+  // Start automated cron jobs
+  SchedulerService.start();
 });
 
 // Graceful shutdown
 const shutdown = () => {
   console.log('\n🛑 Gracefully shutting down...');
+  SchedulerService.stop();
   server.close(() => {
     console.log('HTTP server closed.');
     pool.end(() => {

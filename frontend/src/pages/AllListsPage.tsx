@@ -3,6 +3,7 @@ import { Plus, Archive } from 'lucide-react';
 import { EntryService } from '../services/entryService';
 import { Category, Entry, EntryFilters } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useDebounce } from '../hooks/useDebounce';
 import { EntryCard } from '../components/entries/EntryCard';
 import { EntryFilterBar } from '../components/entries/EntryFilterBar';
 import { Button } from '../components/common/Button';
@@ -47,6 +48,8 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
     limit: 50,
   });
 
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   // Sync category prop if changed
   useEffect(() => {
     if (initialCategoryId) {
@@ -60,7 +63,7 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
       setError(null);
       const params = {
         ...filters,
-        search: searchQuery || undefined,
+        search: debouncedSearch || undefined,
       };
       const res = await EntryService.getAll(params);
       setEntries(res.entries);
@@ -71,7 +74,7 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [filters, searchQuery]);
+  }, [filters, debouncedSearch]);
 
   useEffect(() => {
     loadEntries();

@@ -114,9 +114,13 @@ const EntryService = {
     await EntryItemModel.delete(itemId);
   },
 
-  // --- Export Data ---
+  // --- Export & Import Data ---
   async getAllForExport() {
     return await EntryModel.getAllForExport();
+  },
+
+  async importEntries(entries, strategy) {
+    return await EntryModel.importEntries(entries, { strategy });
   },
 };
 

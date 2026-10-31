@@ -17,8 +17,12 @@ import {
   Share2,
   Copy,
   ShoppingCart,
+  Target,
+  Paperclip,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
-import { Entry, EntryItem } from '../../types';
+import { Entry, EntryItem, EntryAttachment } from '../../types';
 import { renderCategoryIcon } from '../../utils/categoryIcons';
 import { getDueStatus, formatDate } from '../../utils/dateUtils';
 import { formatCurrency, getPriorityConfig } from '../../utils/formatters';
@@ -26,6 +30,9 @@ import { triggerHaptic } from '../../utils/haptics';
 import { shareEntry } from '../../utils/shareUtils';
 import { useToast } from '../../context/ToastContext';
 import { Badge } from '../common/Badge';
+import { ImageViewerModal } from './ImageViewerModal';
+import { AttachmentService } from '../../services/attachmentService';
+import { TemplateService } from '../../services/templateService';
 
 interface EntryCardProps {
   entry: Entry;
@@ -52,6 +59,7 @@ export const EntryCard: React.FC<EntryCardProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [viewingAttachment, setViewingAttachment] = useState<EntryAttachment | null>(null);
   const { showToast } = useToast();
 
   const handleShare = async () => {
@@ -60,6 +68,29 @@ export const EntryCard: React.FC<EntryCardProps> = ({
     const result = await shareEntry(entry);
     if (result === 'copied') {
       showToast('คัดลอกข้อความแชร์ลง Clipboard แล้ว พร้อมส่งใน LINE');
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    try {
+      setShowMenu(false);
+      triggerHaptic('success');
+      await TemplateService.create({
+        title: entry.title,
+        description: entry.description || undefined,
+        category_name: entry.category_name,
+        items: entry.items?.map((i) => ({
+          title: i.title,
+          amount: i.amount || 0,
+          quantity: i.quantity || 1,
+        })),
+        tags: entry.tags,
+        estimated_amount: entry.amount || 0,
+      });
+      showToast(`บันทึก "${entry.title}" เป็นเทมเพลตเรียบร้อยแล้ว`, 'success');
+    } catch (err) {
+      console.error('Failed to save template', err);
+      showToast('ไม่สามารถบันทึกเป็นเทมเพลตได้', 'error');
     }
   };
 
@@ -117,6 +148,21 @@ export const EntryCard: React.FC<EntryCardProps> = ({
               >
                 {renderCategoryIcon(entry.category_icon, 'w-3 h-3')}
                 <span className="truncate max-w-[120px]">{entry.category_name}</span>
+              </span>
+            )}
+
+            {/* Goal Link Badge */}
+            {entry.goal_title && (
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border"
+                style={{
+                  backgroundColor: `${entry.goal_color || '#8B5CF6'}15`,
+                  color: entry.goal_color || '#8B5CF6',
+                  borderColor: `${entry.goal_color || '#8B5CF6'}30`,
+                }}
+              >
+                <Target className="w-3 h-3" />
+                <span className="truncate max-w-[120px]">{entry.goal_title}</span>
               </span>
             )}
 
@@ -254,6 +300,47 @@ export const EntryCard: React.FC<EntryCardProps> = ({
             </div>
           )}
 
+          {/* ATTACHMENT SLIPS / RECEIPTS PREVIEW */}
+          {entry.attachments && entry.attachments.length > 0 && (
+            <div className="mt-2.5 flex items-center gap-2 overflow-x-auto py-1 no-scrollbar">
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1 flex-shrink-0">
+                <Paperclip className="w-3 h-3" />
+                <span>สลิป/เอกสาร ({entry.attachments.length}):</span>
+              </span>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {entry.attachments.map((att) => {
+                  const isPdf = att.mime_type === 'application/pdf' || att.file_name.toLowerCase().endsWith('.pdf');
+                  const url = AttachmentService.getAttachmentUrl(att);
+
+                  return (
+                    <button
+                      key={att.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewingAttachment(att);
+                      }}
+                      className="group/att flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700/60 transition-all text-[11px] font-medium text-slate-700 dark:text-slate-300 max-w-[140px] truncate"
+                      title={`${att.file_name} (คลิกดูภาพขยาย)`}
+                    >
+                      {isPdf ? (
+                        <FileText className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
+                      ) : (
+                        <img
+                          src={url}
+                          alt={att.file_name}
+                          className="w-4 h-4 rounded object-cover flex-shrink-0"
+                        />
+                      )}
+                      <span className="truncate">{att.file_name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Summary Pills Row (Total Amount, Quantity, Date, Tags) */}
           <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
             {/* Total Amount Pill */}
@@ -296,6 +383,23 @@ export const EntryCard: React.FC<EntryCardProps> = ({
                     #{tag}
                   </span>
                 ))}
+              </div>
+            )}
+
+            {/* Custom Metadata Values (FEAT-B4) */}
+            {entry.custom_values && Object.keys(entry.custom_values).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {Object.entries(entry.custom_values).map(([key, val]) => {
+                  if (val === null || val === undefined || val === '') return null;
+                  return (
+                    <span
+                      key={key}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-medium border border-indigo-100 dark:border-indigo-900/50"
+                    >
+                      {typeof val === 'boolean' ? (val ? '✓ ผ่าน' : '✕ ไม่ผ่าน') : String(val)}
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -342,6 +446,15 @@ export const EntryCard: React.FC<EntryCardProps> = ({
                   >
                     <Share2 className="w-3.5 h-3.5 text-indigo-500" />
                     <span>แชร์รายการ (LINE)</span>
+                  </button>
+
+                  {/* Save as Template button */}
+                  <button
+                    onClick={handleSaveAsTemplate}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>บันทึกเป็นเทมเพลต (Template)</span>
                   </button>
 
                   {/* Duplicate button */}
@@ -414,6 +527,12 @@ export const EntryCard: React.FC<EntryCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Image / Attachment Lightbox Modal */}
+      <ImageViewerModal
+        attachment={viewingAttachment}
+        onClose={() => setViewingAttachment(null)}
+      />
     </div>
   );
 };

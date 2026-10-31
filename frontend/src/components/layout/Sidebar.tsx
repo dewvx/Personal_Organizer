@@ -2,6 +2,8 @@ import React from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
+  KanbanSquare,
+  Target,
   Calendar,
   FolderTree,
   Star,
@@ -18,6 +20,7 @@ interface SidebarProps {
   categories: Category[];
   activeCategoryId?: number;
   onOpenNewEntry: () => void;
+  onOpenTemplates?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,10 +29,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   categories,
   activeCategoryId,
   onOpenNewEntry,
+  onOpenTemplates,
 }) => {
   const mainNav = [
     { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: LayoutDashboard },
     { id: 'all', label: 'รายการทั้งหมด (All Lists)', icon: CheckSquare },
+    { id: 'kanban', label: 'กระดานคัมบัง (Kanban)', icon: KanbanSquare },
+    { id: 'goals', label: 'เป้าหมายชีวิต (Goals)', icon: Target },
     { id: 'calendar', label: 'ปฏิทินนัดหมาย (Calendar)', icon: Calendar },
     { id: 'categories', label: 'จัดการหมวดหมู่ (Categories)', icon: FolderTree },
     { id: 'favorites', label: 'รายการโปรด (Favorites)', icon: Star },
@@ -89,6 +95,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               );
             })}
+            {onOpenTemplates && (
+              <button
+                onClick={onOpenTemplates}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-700 dark:hover:text-amber-300 transition-all"
+              >
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>คลังเทมเพลต (Templates)</span>
+              </button>
+            )}
           </nav>
         </div>
 

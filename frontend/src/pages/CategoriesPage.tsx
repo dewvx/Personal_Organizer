@@ -48,9 +48,11 @@ export const CategoriesPage: React.FC<CategoriesPageProps> = ({
       setIsDeleting(true);
       await CategoryService.delete(deletingId);
       setDeletingId(null);
-      window.location.reload();
+      showToast('ลบหมวดหมู่สำเร็จ');
+      onRefreshCategories();
     } catch (err: any) {
       showToast('ไม่สามารถลบหมวดหมู่ได้', 'error');
+    } finally {
       setIsDeleting(false);
     }
   };
@@ -60,8 +62,8 @@ export const CategoriesPage: React.FC<CategoriesPageProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">จัดการหมวดหมู่ (Categories)</h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">จัดการหมวดหมู่ (Categories)</h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             สร้างและปรับแต่งประเภทข้อมูลของคุณได้อย่างอิสระ พร้อมกำหนดสีและไอคอน
           </p>
         </div>

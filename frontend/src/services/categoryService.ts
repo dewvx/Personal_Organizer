@@ -1,10 +1,24 @@
 import api from './api';
 import { ApiResponse, Category } from '../types';
+import { OfflineStorage } from './offlineStorage';
 
 export const CategoryService = {
   async getAll(): Promise<Category[]> {
-    const res = await api.get<ApiResponse<Category[]>>('/categories');
-    return res.data.data;
+    if (!navigator.onLine) {
+      const cached = await OfflineStorage.getCachedCategories();
+      if (cached.length > 0) return cached;
+    }
+
+    try {
+      const res = await api.get<ApiResponse<Category[]>>('/categories');
+      // Background cache
+      OfflineStorage.saveCategories(res.data.data).catch(() => {});
+      return res.data.data;
+    } catch (err) {
+      const cached = await OfflineStorage.getCachedCategories();
+      if (cached.length > 0) return cached;
+      throw err;
+    }
   },
 
   async getById(id: number): Promise<Category> {
