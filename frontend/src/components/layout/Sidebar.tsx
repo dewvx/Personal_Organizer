@@ -2,6 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
+  Calendar,
   FolderTree,
   Star,
   Archive,
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const mainNav = [
     { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: LayoutDashboard },
     { id: 'all', label: 'รายการทั้งหมด (All Lists)', icon: CheckSquare },
+    { id: 'calendar', label: 'ปฏิทินนัดหมาย (Calendar)', icon: Calendar },
     { id: 'categories', label: 'จัดการหมวดหมู่ (Categories)', icon: FolderTree },
     { id: 'favorites', label: 'รายการโปรด (Favorites)', icon: Star },
     { id: 'archive', label: 'คลังเก็บเอกสาร (Archive)', icon: Archive },

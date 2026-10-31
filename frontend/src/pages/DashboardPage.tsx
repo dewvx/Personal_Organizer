@@ -27,6 +27,8 @@ interface DashboardPageProps {
   onNavigateTab: (tab: string, categoryId?: number) => void;
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: number) => void;
+  onDuplicate?: (id: number) => void;
+  onOpenShoppingMode?: (entry: Entry) => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -34,6 +36,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigateTab,
   onEditEntry,
   onDeleteEntry,
+  onDuplicate,
+  onOpenShoppingMode,
 }) => {
   const [data, setData] = useState<DashboardSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -311,6 +315,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 onEdit={onEditEntry}
                 onDelete={onDeleteEntry}
                 onToggleSubItem={handleToggleSubItem}
+                onDuplicate={onDuplicate}
+                onOpenShoppingMode={onOpenShoppingMode}
               />
             ))}
           </div>
@@ -352,6 +358,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 onEdit={onEditEntry}
                 onDelete={onDeleteEntry}
                 onToggleSubItem={handleToggleSubItem}
+                onDuplicate={onDuplicate}
+                onOpenShoppingMode={onOpenShoppingMode}
               />
             ))}
           </div>

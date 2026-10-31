@@ -433,6 +433,53 @@ const EntryModel = {
   },
 
   /**
+   * Duplicate entry with its sub-items
+   */
+  async duplicate(id) {
+    const original = await this.findById(id);
+    if (!original) return null;
+
+    const newTitle = `${original.title} (สำเนา)`;
+    const newItems = (original.items || []).map((item) => ({
+      title: item.title,
+      amount: item.amount,
+      quantity: item.quantity,
+      is_completed: false,
+    }));
+
+    return await this.create({
+      category_id: original.category_id,
+      title: newTitle,
+      description: original.description,
+      entry_date: new Date().toISOString().split('T')[0],
+      due_date: original.due_date,
+      status: 'pending',
+      priority: original.priority,
+      amount: original.amount,
+      quantity: original.quantity,
+      tags: original.tags,
+      is_favorite: false,
+      is_archived: false,
+      recurring: original.recurring || 'none',
+      items: newItems,
+    });
+  },
+
+  /**
+   * Archive all completed entries in one click
+   */
+  async archiveCompleted() {
+    const text = `
+      UPDATE entries
+      SET is_archived = true
+      WHERE status = 'completed' AND is_archived = false
+      RETURNING id
+    `;
+    const res = await query(text);
+    return res.rowCount;
+  },
+
+  /**
    * Export all entries
    */
   async getAllForExport() {

@@ -83,6 +83,25 @@ const EntryController = {
     }
   },
 
+  async duplicate(req, res, next) {
+    try {
+      const { id } = req.params;
+      const duplicated = await EntryService.duplicateEntry(id);
+      return successResponse(res, duplicated, 'Entry duplicated successfully', 201);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async archiveCompleted(req, res, next) {
+    try {
+      const count = await EntryService.archiveAllCompleted();
+      return successResponse(res, { count }, `Archived ${count} completed entries successfully`);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // --- Sub-Item Endpoints ---
 
   async toggleSubItem(req, res, next) {

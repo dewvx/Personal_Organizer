@@ -13,23 +13,33 @@ import { ConfirmModal } from './components/common/ConfirmModal';
 // Pages
 import { DashboardPage } from './pages/DashboardPage';
 import { AllListsPage } from './pages/AllListsPage';
+import { CalendarViewPage } from './pages/CalendarViewPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { FavoritesPage } from './pages/FavoritesPage';
 import { ArchivePage } from './pages/ArchivePage';
+import { ShoppingModeModal } from './components/entries/ShoppingModeModal';
+import { PinLockModal } from './components/common/PinLockModal';
 
 const MainApp: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'all' | 'categories' | 'favorites' | 'archive'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'all' | 'calendar' | 'categories' | 'favorites' | 'archive'>('dashboard');
   const [activeCategoryId, setActiveCategoryId] = useState<number | undefined>(undefined);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   
-  // Modals
+  // Modals & Mobile Focus States
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [defaultEntryCategoryId, setDefaultEntryCategoryId] = useState<number | undefined>(undefined);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [shoppingModeEntry, setShoppingModeEntry] = useState<Entry | null>(null);
+
+  // PIN Lock Security States
+  const [isPinSet, setIsPinSet] = useState<boolean>(() => Boolean(localStorage.getItem('app_pin_code')));
+  const [isLocked, setIsLocked] = useState<boolean>(() => Boolean(localStorage.getItem('app_pin_code')));
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinModalMode, setPinModalMode] = useState<'unlock' | 'set' | 'disable'>('unlock');
 
   const { showToast } = useToast();
 
@@ -91,6 +101,27 @@ const MainApp: React.FC = () => {
     }
   };
 
+  const handleDuplicateEntry = async (id: number) => {
+    try {
+      await EntryService.duplicate(id);
+      showToast('คัดลอกรายการเรียบร้อย');
+      setRefreshKey((k) => k + 1);
+      loadCategories();
+    } catch (err) {
+      showToast('ไม่สามารถคัดลอกรายการได้', 'error');
+    }
+  };
+
+  const handleToggleShoppingItem = async (itemId: number, currentCompleted: boolean) => {
+    try {
+      const updated = await EntryService.toggleSubItem(itemId, currentCompleted);
+      setShoppingModeEntry(updated);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      showToast('ไม่สามารถอัปเดตรายการซื้อของได้', 'error');
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white transition-colors">
       {/* Desktop Sidebar */}
@@ -114,6 +145,16 @@ const MainApp: React.FC = () => {
             }
           }}
           onOpenNewEntry={() => handleOpenNewEntry()}
+          onLockApp={() => {
+            setIsLocked(true);
+            setPinModalMode('unlock');
+            setIsPinModalOpen(true);
+          }}
+          onConfigurePin={(mode) => {
+            setPinModalMode(mode);
+            setIsPinModalOpen(true);
+          }}
+          isPinSet={isPinSet}
         />
 
         {/* Page Container */}
@@ -125,6 +166,8 @@ const MainApp: React.FC = () => {
               onNavigateTab={(tab, catId) => handleSelectTab(tab, catId)}
               onEditEntry={handleEditEntry}
               onDeleteEntry={(id) => setDeletingEntryId(id)}
+              onDuplicate={handleDuplicateEntry}
+              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
             />
           )}
 
@@ -137,6 +180,19 @@ const MainApp: React.FC = () => {
               onOpenNewEntry={handleOpenNewEntry}
               onEditEntry={handleEditEntry}
               onDeleteEntry={(id) => setDeletingEntryId(id)}
+              onDuplicate={handleDuplicateEntry}
+              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
+            />
+          )}
+
+          {currentTab === 'calendar' && (
+            <CalendarViewPage
+              key={`calendar_${refreshKey}`}
+              onOpenNewEntry={() => handleOpenNewEntry()}
+              onEditEntry={handleEditEntry}
+              onDeleteEntry={(id) => setDeletingEntryId(id)}
+              onDuplicate={handleDuplicateEntry}
+              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
             />
           )}
 
@@ -155,6 +211,8 @@ const MainApp: React.FC = () => {
               onEditEntry={handleEditEntry}
               onDeleteEntry={(id) => setDeletingEntryId(id)}
               onNavigateAll={() => handleSelectTab('all')}
+              onDuplicate={handleDuplicateEntry}
+              onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
             />
           )}
 
@@ -185,6 +243,39 @@ const MainApp: React.FC = () => {
         initialData={editingEntry}
         categories={categories}
         defaultCategoryId={defaultEntryCategoryId}
+      />
+
+      {/* Shopping Focus Mode Modal */}
+      {shoppingModeEntry && (
+        <ShoppingModeModal
+          isOpen={!!shoppingModeEntry}
+          entry={shoppingModeEntry}
+          onClose={() => setShoppingModeEntry(null)}
+          onToggleItem={handleToggleShoppingItem}
+        />
+      )}
+
+      {/* 4-digit PIN Passcode Lock Screen Modal */}
+      <PinLockModal
+        isOpen={isLocked || isPinModalOpen}
+        mode={isLocked ? 'unlock' : pinModalMode}
+        onSuccess={() => {
+          setIsLocked(false);
+          setIsPinModalOpen(false);
+          setIsPinSet(Boolean(localStorage.getItem('app_pin_code')));
+          showToast(
+            isLocked
+              ? 'ปลดล็อกเรียบร้อย'
+              : pinModalMode === 'set'
+              ? 'ตั้งรหัส PIN สำเร็จ'
+              : 'ยกเลิกรหัส PIN สำเร็จ'
+          );
+        }}
+        onCancel={() => {
+          if (!isLocked) {
+            setIsPinModalOpen(false);
+          }
+        }}
       />
 
       {/* Delete Entry Confirmation Modal */}

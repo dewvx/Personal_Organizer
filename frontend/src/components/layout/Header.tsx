@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Sparkles, Plus, Calendar, Sun, Moon, Download, FileSpreadsheet, FileJson } from 'lucide-react';
+import { Search, Sparkles, Plus, Calendar, Sun, Moon, Download, FileSpreadsheet, FileJson, Lock, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '../common/Button';
 import { useTheme } from '../../context/ThemeContext';
 import { EntryService } from '../../services/entryService';
@@ -9,12 +9,18 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onOpenNewEntry: () => void;
+  onLockApp?: () => void;
+  onConfigurePin?: (mode: 'set' | 'disable') => void;
+  isPinSet?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onOpenNewEntry,
+  onLockApp,
+  onConfigurePin,
+  isPinSet,
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const { showToast } = useToast();
@@ -102,10 +108,53 @@ export const Header: React.FC<HeaderProps> = ({
                     <FileJson className="w-4 h-4 text-indigo-600" />
                     <span>สำรองข้อมูลแบบ JSON</span>
                   </button>
+
+                  <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+                  <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    ความปลอดภัย (Security)
+                  </div>
+                  {isPinSet ? (
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        onConfigurePin?.('disable');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                    >
+                      <ShieldAlert className="w-4 h-4 text-rose-500" />
+                      <span>ยกเลิกรหัส PIN</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        onConfigurePin?.('set');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                      <span>ตั้งรหัส PIN 4 หลัก</span>
+                    </button>
+                  )}
                 </div>
               </>
             )}
           </div>
+
+          {/* Quick Lock / Set PIN Button */}
+          <button
+            onClick={() => {
+              if (isPinSet) {
+                onLockApp?.();
+              } else {
+                onConfigurePin?.('set');
+              }
+            }}
+            title={isPinSet ? 'ล็อกหน้าจอด้วยรหัส PIN' : 'ตั้งรหัส PIN เพื่อความปลอดภัย'}
+            className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Lock className={`w-4 h-4 ${isPinSet ? 'text-indigo-600 dark:text-indigo-400' : ''}`} />
+          </button>
 
           {/* Dark / Light Mode Toggle */}
           <button

@@ -12,11 +12,14 @@ import {
   ChevronUp,
   Repeat,
   ListPlus,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { Category, Entry, EntryItem, EntryPriority, EntryStatus, RecurringInterval } from '../../types';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { formatCurrency } from '../../utils/formatters';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 interface EntryFormModalProps {
   isOpen: boolean;
@@ -53,6 +56,18 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
 
   // Dynamic Sub-items state
   const [subItems, setSubItems] = useState<EntryItem[]>([]);
+
+  // Speech Recognition for Title
+  const { isListening: isListeningTitle, isSupported: isSpeechSupported, toggleListening: toggleTitleSpeech } =
+    useSpeechRecognition({
+      onResult: (text) => setTitle((prev) => (prev ? `${prev} ${text}` : text)),
+    });
+
+  // Speech Recognition for Description
+  const { isListening: isListeningDesc, toggleListening: toggleDescSpeech } =
+    useSpeechRecognition({
+      onResult: (text) => setDescription((prev) => (prev ? `${prev} ${text}` : text)),
+    });
 
   useEffect(() => {
     if (initialData) {
@@ -214,8 +229,26 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
 
             {/* Title */}
             <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  ชื่อรายการ *
+                </label>
+                {isSpeechSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleTitleSpeech}
+                    className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg transition-colors ${
+                      isListeningTitle
+                        ? 'bg-rose-500 text-white animate-pulse'
+                        : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60'
+                    }`}
+                  >
+                    {isListeningTitle ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                    <span>{isListeningTitle ? 'กำลังฟังเสียง...' : 'พิมพ์ด้วยเสียง'}</span>
+                  </button>
+                )}
+              </div>
               <Input
-                label="ชื่อรายการ *"
                 placeholder="เช่น ซื้อของที่ตลาด, ส่งรายงานประจำเดือน, ชำระค่าบริการ..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -374,12 +407,28 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
 
             {/* Description / Notes */}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                รายละเอียด / บันทึกเพิ่มเติม
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  รายละเอียด / บันทึกเพิ่มเติม
+                </label>
+                {isSpeechSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleDescSpeech}
+                    className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg transition-colors ${
+                      isListeningDesc
+                        ? 'bg-rose-500 text-white animate-pulse'
+                        : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60'
+                    }`}
+                  >
+                    {isListeningDesc ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                    <span>{isListeningDesc ? 'กำลังฟังเสียง...' : 'พิมพ์ด้วยเสียง'}</span>
+                  </button>
+                )}
+              </div>
               <textarea
                 rows={2}
-                placeholder="ระบุข้อความ รายละเอียด หรือไอเดียเพิ่มเติม..."
+                placeholder="ระบุข้อความ รายละเอียด หรือกดปุ่มไมค์เพื่อพูด..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 transition-colors focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"

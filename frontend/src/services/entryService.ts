@@ -44,6 +44,16 @@ export const EntryService = {
     await api.delete(`/entries/${id}`);
   },
 
+  async duplicate(id: number): Promise<Entry> {
+    const res = await api.post<ApiResponse<Entry>>(`/entries/${id}/duplicate`);
+    return res.data.data;
+  },
+
+  async archiveAllCompleted(): Promise<{ count: number }> {
+    const res = await api.patch<ApiResponse<{ count: number }>>('/entries/bulk/archive-completed');
+    return res.data.data;
+  },
+
   async toggleSubItem(itemId: number, is_completed: boolean): Promise<Entry> {
     const res = await api.patch<ApiResponse<Entry>>(`/entries/items/${itemId}/toggle`, { is_completed });
     return res.data.data;

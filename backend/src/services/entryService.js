@@ -83,6 +83,15 @@ const EntryService = {
     return await EntryModel.delete(id);
   },
 
+  async duplicateEntry(id) {
+    await this.getEntryById(id);
+    return await EntryModel.duplicate(id);
+  },
+
+  async archiveAllCompleted() {
+    return await EntryModel.archiveCompleted();
+  },
+
   // --- Sub-items / Checklist actions ---
 
   async toggleSubItem(itemId, isCompleted) {

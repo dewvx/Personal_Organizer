@@ -3,13 +3,15 @@ const EntryController = require('../controllers/entryController');
 
 const router = express.Router();
 
-// Export route (must be before /:id)
+// Export and Bulk routes (must be before /:id)
 router.get('/export', EntryController.exportData);
+router.patch('/bulk/archive-completed', EntryController.archiveCompleted);
 
 // Main CRUD
 router.get('/', EntryController.getAll);
 router.get('/:id', EntryController.getById);
 router.post('/', EntryController.create);
+router.post('/:id/duplicate', EntryController.duplicate);
 router.put('/:id', EntryController.update);
 router.patch('/:id/status', EntryController.updateStatus);
 router.patch('/:id/favorite', EntryController.updateFavorite);

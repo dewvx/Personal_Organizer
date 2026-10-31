@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import { EntryService } from '../services/entryService';
 import { Category, Entry, EntryFilters } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -16,6 +16,8 @@ interface AllListsPageProps {
   onOpenNewEntry: (defaultCatId?: number) => void;
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: number) => void;
+  onDuplicate?: (id: number) => void;
+  onOpenShoppingMode?: (entry: Entry) => void;
 }
 
 export const AllListsPage: React.FC<AllListsPageProps> = ({
@@ -25,6 +27,8 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
   onOpenNewEntry,
   onEditEntry,
   onDeleteEntry,
+  onDuplicate,
+  onOpenShoppingMode,
 }) => {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [total, setTotal] = useState(0);
@@ -125,6 +129,17 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
   };
 
   const selectedCategory = categories.find((c) => String(c.id) === String(filters.category_id));
+  const completedCount = entries.filter((e) => e.status === 'completed').length;
+
+  const handleArchiveAllCompleted = async () => {
+    try {
+      const res = await EntryService.archiveAllCompleted();
+      showToast(`เก็บรายการที่เสร็จเข้าคลังแล้ว ${res.count} รายการ`);
+      loadEntries();
+    } catch (err) {
+      showToast('ไม่สามารถเคลียร์รายการได้', 'error');
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-150">
@@ -141,14 +156,27 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
           </p>
         </div>
 
-        <Button
-          onClick={() => onOpenNewEntry(selectedCategory?.id)}
-          size="md"
-          className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium shadow-sm shadow-indigo-200 dark:shadow-none"
-          leftIcon={<Plus className="w-4 h-4 stroke-[2.5]" />}
-        >
-          เพิ่มรายการ
-        </Button>
+        <div className="flex items-center gap-2">
+          {completedCount > 0 && (
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={handleArchiveAllCompleted}
+              className="text-xs sm:text-sm text-slate-600 dark:text-slate-300"
+              leftIcon={<Archive className="w-4 h-4 text-slate-400" />}
+            >
+              เคลียร์ที่เสร็จ ({completedCount})
+            </Button>
+          )}
+          <Button
+            onClick={() => onOpenNewEntry(selectedCategory?.id)}
+            size="md"
+            className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium shadow-sm shadow-indigo-200 dark:shadow-none"
+            leftIcon={<Plus className="w-4 h-4 stroke-[2.5]" />}
+          >
+            เพิ่มรายการ
+          </Button>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -192,6 +220,8 @@ export const AllListsPage: React.FC<AllListsPageProps> = ({
               onEdit={onEditEntry}
               onDelete={onDeleteEntry}
               onToggleSubItem={handleToggleSubItem}
+              onDuplicate={onDuplicate}
+              onOpenShoppingMode={onOpenShoppingMode}
             />
           ))}
         </div>

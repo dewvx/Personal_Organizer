@@ -11,12 +11,16 @@ interface FavoritesPageProps {
   onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (id: number) => void;
   onNavigateAll: () => void;
+  onDuplicate?: (id: number) => void;
+  onOpenShoppingMode?: (entry: Entry) => void;
 }
 
 export const FavoritesPage: React.FC<FavoritesPageProps> = ({
   onEditEntry,
   onDeleteEntry,
   onNavigateAll,
+  onDuplicate,
+  onOpenShoppingMode,
 }) => {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +126,8 @@ export const FavoritesPage: React.FC<FavoritesPageProps> = ({
               onEdit={onEditEntry}
               onDelete={onDeleteEntry}
               onToggleSubItem={handleToggleSubItem}
+              onDuplicate={onDuplicate}
+              onOpenShoppingMode={onOpenShoppingMode}
             />
           ))}
         </div>
