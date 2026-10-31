@@ -1,5 +1,10 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 require('dotenv').config();
+
+// PostgreSQL OID 1082 is DATE.
+// Prevent pg from converting DATE to a JavaScript Date object (which causes timezone shifts to UTC).
+// Always parse as clean raw string "YYYY-MM-DD".
+types.setTypeParser(1082, (val) => val);
 
 const pool = new Pool({
   host: process.env.DB_HOST || '127.0.0.1',

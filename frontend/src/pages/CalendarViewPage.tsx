@@ -12,6 +12,7 @@ import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
 import { triggerHaptic } from '../utils/haptics';
 import { useToast } from '../context/ToastContext';
+import { getTodayDateString } from '../utils/dateUtils';
 
 interface CalendarViewPageProps {
   onOpenNewEntry: (datePreset?: string) => void;
@@ -30,9 +31,7 @@ export const CalendarViewPage: React.FC<CalendarViewPageProps> = ({
 }) => {
   const { showToast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [allEntries, setAllEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,7 +122,7 @@ export const CalendarViewPage: React.FC<CalendarViewPageProps> = ({
     triggerHaptic('light');
     const now = new Date();
     setCurrentDate(now);
-    setSelectedDate(now.toISOString().split('T')[0]);
+    setSelectedDate(getTodayDateString(now));
   };
 
   const monthNamesThai = [
@@ -232,8 +231,7 @@ export const CalendarViewPage: React.FC<CalendarViewPageProps> = ({
             const dayNum = idx + 1;
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
             const isSelected = selectedDate === dateStr;
-            const isToday =
-              new Date().toISOString().split('T')[0] === dateStr;
+            const isToday = getTodayDateString() === dateStr;
             const dayEntries = entriesByDate[dateStr] || [];
 
             return (

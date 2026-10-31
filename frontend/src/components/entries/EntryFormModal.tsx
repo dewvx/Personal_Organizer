@@ -19,6 +19,7 @@ import { Category, Entry, EntryItem, EntryPriority, EntryStatus, RecurringInterv
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { formatCurrency } from '../../utils/formatters';
+import { getTodayDateString } from '../../utils/dateUtils';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 interface EntryFormModalProps {
@@ -96,7 +97,7 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
       setTitle('');
       setDescription('');
       setCategoryId(defaultCategoryId || (categories[0]?.id || ''));
-      setEntryDate(new Date().toISOString().split('T')[0]);
+      setEntryDate(getTodayDateString());
       setDueDate('');
       setStatus('pending');
       setPriority('medium');
@@ -176,7 +177,7 @@ export const EntryFormModal: React.FC<EntryFormModalProps> = ({
         title: title.trim(),
         description: description.trim() || null,
         category_id: categoryId ? Number(categoryId) : null,
-        entry_date: entryDate || new Date().toISOString().split('T')[0],
+        entry_date: entryDate || getTodayDateString(),
         due_date: dueDate || null,
         status,
         priority,

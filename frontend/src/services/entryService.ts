@@ -1,5 +1,6 @@
 import api from './api';
 import { ApiResponse, Entry, EntryFilters } from '../types';
+import { getTodayDateString } from '../utils/dateUtils';
 
 export const EntryService = {
   async getAll(filters?: EntryFilters): Promise<{ entries: Entry[]; meta?: any }> {
@@ -64,7 +65,7 @@ export const EntryService = {
     const downloadUrl = `${baseURL}/entries/export?format=${format}`;
     const link = document.createElement('a');
     link.href = downloadUrl;
-    link.setAttribute('download', `personal_organizer_${new Date().toISOString().split('T')[0]}.${format}`);
+    link.setAttribute('download', `personal_organizer_${getTodayDateString()}.${format}`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

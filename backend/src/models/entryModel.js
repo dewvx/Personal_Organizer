@@ -1,5 +1,12 @@
 const { query, pool } = require('../config/database');
 
+function getLocalDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const EntryModel = {
   /**
    * Find entries with filters, search, sorting, and pagination
@@ -244,7 +251,7 @@ const EntryModel = {
       category_id ? parseInt(category_id, 10) : null,
       title.trim(),
       description ? description.trim() : null,
-      entry_date || new Date().toISOString().split('T')[0],
+      entry_date || getLocalDateString(),
       due_date || null,
       status || 'pending',
       priority || 'medium',
@@ -451,7 +458,7 @@ const EntryModel = {
       category_id: original.category_id,
       title: newTitle,
       description: original.description,
-      entry_date: new Date().toISOString().split('T')[0],
+      entry_date: getLocalDateString(),
       due_date: original.due_date,
       status: 'pending',
       priority: original.priority,

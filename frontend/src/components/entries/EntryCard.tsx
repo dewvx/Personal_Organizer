@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Entry, EntryItem } from '../../types';
 import { renderCategoryIcon } from '../../utils/categoryIcons';
-import { getDueStatus } from '../../utils/dateUtils';
+import { getDueStatus, formatDate } from '../../utils/dateUtils';
 import { formatCurrency, getPriorityConfig } from '../../utils/formatters';
 import { triggerHaptic } from '../../utils/haptics';
 import { shareEntry } from '../../utils/shareUtils';
@@ -276,7 +276,7 @@ export const EntryCard: React.FC<EntryCardProps> = ({
             {entry.entry_date && (
               <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
                 <Calendar className="w-3 h-3" />
-                <span>{entry.entry_date}</span>
+                <span>{formatDate(entry.entry_date)}</span>
               </span>
             )}
 

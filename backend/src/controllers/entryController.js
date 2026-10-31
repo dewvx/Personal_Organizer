@@ -1,6 +1,13 @@
 const EntryService = require('../services/entryService');
 const { successResponse } = require('../utils/apiResponse');
 
+function getLocalDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const EntryController = {
   async getAll(req, res, next) {
     try {
@@ -193,13 +200,13 @@ const EntryController = {
         const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n'); // \uFEFF UTF-8 BOM for Thai Excel
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="personal_organizer_${new Date().toISOString().split('T')[0]}.csv"`);
+        res.setHeader('Content-Disposition', `attachment; filename="personal_organizer_${getLocalDateString()}.csv"`);
         return res.status(200).send(csvContent);
       }
 
       // Default JSON export
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="personal_organizer_backup_${new Date().toISOString().split('T')[0]}.json"`);
+      res.setHeader('Content-Disposition', `attachment; filename="personal_organizer_backup_${getLocalDateString()}.json"`);
       return res.status(200).json(entries);
     } catch (err) {
       next(err);
