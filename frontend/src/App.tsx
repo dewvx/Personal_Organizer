@@ -27,6 +27,9 @@ const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then((m) => ({ 
 const ArchivePage = lazy(() => import('./pages/ArchivePage').then((m) => ({ default: m.ArchivePage })));
 const KanbanBoardPage = lazy(() => import('./pages/KanbanBoardPage').then((m) => ({ default: m.KanbanBoardPage })));
 const GoalsPage = lazy(() => import('./pages/GoalsPage').then((m) => ({ default: m.GoalsPage })));
+const NotesPage = lazy(() => import('./pages/NotesPage').then((m) => ({ default: m.NotesPage })));
+const FinancePage = lazy(() => import('./pages/FinancePage').then((m) => ({ default: m.FinancePage })));
+const RemindersPage = lazy(() => import('./pages/RemindersPage').then((m) => ({ default: m.RemindersPage })));
 
 // Heavy Modals (Lazy Loaded on Demand)
 const ShoppingModeModal = lazy(() => import('./components/entries/ShoppingModeModal').then((m) => ({ default: m.ShoppingModeModal })));
@@ -36,7 +39,7 @@ const TemplatesModal = lazy(() => import('./components/templates/TemplatesModal'
 const EncryptedBackupModal = lazy(() => import('./components/common/EncryptedBackupModal').then((m) => ({ default: m.EncryptedBackupModal })));
 
 const MainApp: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'all' | 'kanban' | 'goals' | 'calendar' | 'categories' | 'favorites' | 'archive'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'all' | 'notes' | 'finance' | 'reminders' | 'kanban' | 'goals' | 'calendar' | 'categories' | 'favorites' | 'archive'>('dashboard');
   const [activeCategoryId, setActiveCategoryId] = useState<number | undefined>(undefined);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -270,6 +273,18 @@ const MainApp: React.FC = () => {
                 onDuplicate={handleDuplicateEntry}
                 onOpenShoppingMode={(entry) => setShoppingModeEntry(entry)}
               />
+            )}
+
+            {currentTab === 'notes' && (
+              <NotesPage key={`notes_${refreshKey}`} />
+            )}
+
+            {currentTab === 'finance' && (
+              <FinancePage key={`finance_${refreshKey}`} />
+            )}
+
+            {currentTab === 'reminders' && (
+              <RemindersPage key={`reminders_${refreshKey}`} />
             )}
 
             {currentTab === 'kanban' && (

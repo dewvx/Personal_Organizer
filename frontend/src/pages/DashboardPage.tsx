@@ -25,6 +25,9 @@ import { EmptyState } from '../components/common/EmptyState';
 import { StatCardSkeleton, EntryCardSkeleton } from '../components/common/SkeletonLoader';
 import { HabitsWidget } from '../components/habits/HabitsWidget';
 import { GoalsWidget } from '../components/goals/GoalsWidget';
+import { NotesWidget } from '../components/notes/NotesWidget';
+import { FinanceWidget } from '../components/finance/FinanceWidget';
+import { RemindersWidget } from '../components/reminders/RemindersWidget';
 import { MonthlyReviewModal } from '../components/dashboard/MonthlyReviewModal';
 import { DashboardLayoutModal } from '../components/dashboard/DashboardLayoutModal';
 
@@ -52,11 +55,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [isLayoutModalOpen, setIsLayoutModalOpen] = useState(false);
   const [layout, setLayout] = useState<DashboardWidgetItem[]>([
     { id: 'stats', label: 'สถิติภาพรวม (Summary Stats)', visible: true, order: 1 },
-    { id: 'habits', label: 'กิจวัตรประจำวัน (Daily Habits)', visible: true, order: 2 },
-    { id: 'goals', label: 'เป้าหมายชีวิต (Life Goals)', visible: true, order: 3 },
-    { id: 'urgent_tasks', label: 'งานใกล้ถึงกำหนด (Upcoming Due)', visible: true, order: 4 },
-    { id: 'budget', label: 'งบประมาณรายจ่าย (Expense Analytics)', visible: true, order: 5 },
-    { id: 'recent_entries', label: 'รายการล่าสุด (Recent Lists)', visible: true, order: 6 },
+    { id: 'reminders', label: 'การแจ้งเตือนสำคัญ (Smart Reminders)', visible: true, order: 2 },
+    { id: 'habits', label: 'กิจวัตรประจำวัน (Daily Habits)', visible: true, order: 3 },
+    { id: 'finance', label: 'สรุปการเงิน (Finance Summary)', visible: true, order: 4 },
+    { id: 'notes', label: 'บันทึกด่วน & ไดอารี่ (Recent Notes)', visible: true, order: 5 },
+    { id: 'goals', label: 'เป้าหมายชีวิต (Life Goals)', visible: true, order: 6 },
+    { id: 'urgent_tasks', label: 'งานใกล้ถึงกำหนด (Upcoming Due)', visible: true, order: 7 },
+    { id: 'budget', label: 'งบประมาณรายจ่าย (Expense Analytics)', visible: true, order: 8 },
+    { id: 'recent_entries', label: 'รายการล่าสุด (Recent Lists)', visible: true, order: 9 },
   ]);
   const { showToast } = useToast();
 
@@ -207,6 +213,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         return <HabitsWidget key="habits" />;
       case 'goals':
         return <GoalsWidget key="goals" onNavigateToGoals={() => onNavigateTab('goals')} />;
+      case 'notes':
+        return <NotesWidget key="notes" onNavigateNotes={() => onNavigateTab('notes')} />;
+      case 'finance':
+        return <FinanceWidget key="finance" onNavigateFinance={() => onNavigateTab('finance')} />;
+      case 'reminders':
+        return <RemindersWidget key="reminders" onNavigateReminders={() => onNavigateTab('reminders')} />;
       case 'budget':
         if (totalExpense <= 0) return null;
         return (

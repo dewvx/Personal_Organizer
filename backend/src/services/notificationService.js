@@ -88,6 +88,92 @@ const NotificationService = {
       ...result,
     };
   },
+
+  /**
+   * Process and send smart reminders that are due right now
+   */
+  async checkAndSendReminders() {
+    const ReminderModel = require('../models/reminderModel');
+    const dueReminders = await ReminderModel.findDueReminders();
+    if (dueReminders.length === 0) return { processed: 0 };
+
+    let sentCount = 0;
+    for (const r of dueReminders) {
+      try {
+        const title = `🔔 ${r.title}`;
+        const body = r.message || (r.entry_title ? `เกี่ยวกับรายการ: "${r.entry_title}"` : 'ถึงเวลาที่กำหนดไว้แล้ว');
+        const url = r.entry_id ? `/?tab=all&entry_id=${r.entry_id}` : '/?tab=reminders';
+
+        await this.broadcastNotification({ title, body, url });
+        await ReminderModel.markSent(r.id, r.repeat_type);
+        sentCount++;
+      } catch (err) {
+        console.error(`Failed to broadcast reminder ${r.id}:`, err);
+      }
+    }
+
+    return { processed: sentCount, total: dueReminders.length };
+  },
+
+  /**
+   * Send Daily Digest (Morning briefing)
+   */
+  async sendDailyDigest() {
+    const SettingModel = require('../models/settingModel');
+    const enabled = await SettingModel.get('daily_digest_enabled');
+    if (enabled !== 'true') return { skipped: true, reason: 'disabled' };
+
+    // Count today's tasks & pending habits
+    const tasksRes = await query(`
+      SELECT COUNT(*)::int AS count
+      FROM entries
+      WHERE is_archived = false 
+        AND status != 'completed'
+        AND (due_date = CURRENT_DATE OR due_date < CURRENT_DATE)
+    `);
+    const todayTasks = tasksRes.rows[0]?.count || 0;
+
+    const habitsRes = await query(`
+      SELECT COUNT(*)::int AS count
+      FROM habits h
+      WHERE NOT EXISTS (
+        SELECT 1 FROM habit_logs hl 
+        WHERE hl.habit_id = h.id AND hl.log_date = CURRENT_DATE AND hl.is_completed = true
+      )
+    `);
+    const pendingHabits = habitsRes.rows[0]?.count || 0;
+
+    const body = `วันนี้มี ${todayTasks} งานที่ต้องทำ และอีก ${pendingHabits} กิจวัตรประจำวัน! ขอให้เป็นวันที่ยอดเยี่ยม 🚀`;
+    return await this.broadcastNotification({
+      title: '☀️ สรุปภารกิจประจำวัน (Daily Digest)',
+      body,
+      url: '/?tab=dashboard',
+    });
+  },
+
+  /**
+   * Send Weekly Summary (Sunday evening review)
+   */
+  async sendWeeklySummary() {
+    const SettingModel = require('../models/settingModel');
+    const enabled = await SettingModel.get('weekly_summary_enabled');
+    if (enabled !== 'true') return { skipped: true, reason: 'disabled' };
+
+    const completedRes = await query(`
+      SELECT COUNT(*)::int AS count
+      FROM entries
+      WHERE status = 'completed'
+        AND updated_at >= CURRENT_DATE - INTERVAL '7 days'
+    `);
+    const completedTasks = completedRes.rows[0]?.count || 0;
+
+    const body = `สัปดาห์นี้คุณทำภารกิจสำเร็จไปแล้ว ${completedTasks} รายการ! พร้อมลุยสัปดาห์หน้าแล้วหรือยัง ✨`;
+    return await this.broadcastNotification({
+      title: '📊 สรุปความคืบหน้ารายสัปดาห์ (Weekly Summary)',
+      body,
+      url: '/?tab=dashboard',
+    });
+  },
 };
 
 module.exports = NotificationService;

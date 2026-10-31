@@ -254,6 +254,192 @@ export interface Template {
   created_at: string;
 }
 
+// ----------------------------------------------------
+// Expansion Phase 1: Notes, Finance, Smart Reminders
+// ----------------------------------------------------
+
+export type NoteType = 'note' | 'journal' | 'quick';
+export type NoteMood = 'great' | 'good' | 'neutral' | 'bad' | 'terrible';
+
+export interface Note {
+  id: number;
+  title: string;
+  content: string;
+  note_type: NoteType;
+  mood: NoteMood | null;
+  tags: string[];
+  is_pinned: boolean;
+  is_archived: boolean;
+  color: string;
+  linked_entry_id?: number | null;
+  linked_goal_id?: number | null;
+  linked_entry_title?: string | null;
+  linked_goal_title?: string | null;
+  note_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteFilters {
+  search?: string;
+  note_type?: NoteType | 'all';
+  mood?: NoteMood | 'all';
+  is_pinned?: boolean | string;
+  is_archived?: boolean | string;
+  start_date?: string;
+  end_date?: string;
+  tag?: string;
+  sort_by?: 'created_at' | 'updated_at' | 'note_date' | 'title';
+  sort_order?: 'ASC' | 'DESC';
+  page?: number;
+  limit?: number;
+}
+
+export interface JournalCalendarDay {
+  note_date: string;
+  count: number;
+  entries: {
+    id: number;
+    title: string;
+    note_type: NoteType;
+    mood: NoteMood | null;
+    color: string;
+    is_pinned: boolean;
+  }[];
+}
+
+export type WalletType = 'cash' | 'bank' | 'credit_card' | 'e_wallet' | 'savings';
+
+export interface Wallet {
+  id: number;
+  name: string;
+  type: WalletType;
+  balance: number;
+  icon: string;
+  color: string;
+  is_archived: boolean;
+  sort_order: number;
+  transaction_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type TransactionType = 'income' | 'expense' | 'transfer';
+
+export interface Transaction {
+  id: number;
+  wallet_id: number;
+  category_id?: number | null;
+  to_wallet_id?: number | null;
+  type: TransactionType;
+  amount: number;
+  note?: string | null;
+  tags: string[];
+  transaction_date: string;
+  attachment_path?: string | null;
+  created_at: string;
+  updated_at: string;
+  wallet_name?: string;
+  wallet_icon?: string;
+  wallet_color?: string;
+  to_wallet_name?: string;
+  to_wallet_icon?: string;
+  to_wallet_color?: string;
+  category_name?: string;
+  category_icon?: string;
+  category_color?: string;
+}
+
+export interface TransactionFilters {
+  wallet_id?: number | string;
+  type?: TransactionType | 'all';
+  category_id?: number | string;
+  start_date?: string;
+  end_date?: string;
+  search?: string;
+  tag?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: 'transaction_date' | 'amount' | 'created_at';
+  sort_order?: 'ASC' | 'DESC';
+}
+
+export interface FinanceSummary {
+  total_income: number;
+  total_expense: number;
+  net_savings: number;
+  savings_rate: number;
+  total_balance: number;
+  counts: {
+    income: number;
+    expense: number;
+    transfer: number;
+  };
+}
+
+export interface MonthlyCategoryFinance {
+  category_id: number;
+  category_name: string;
+  category_color: string;
+  category_icon: string;
+  budget: number;
+  total_spent: number;
+  count: number;
+}
+
+export interface DailyFinanceTrend {
+  date: string;
+  income: number;
+  expense: number;
+}
+
+export interface MonthlyFinanceReport {
+  period: {
+    year: number;
+    month: number;
+    year_month: string;
+  };
+  categories: MonthlyCategoryFinance[];
+  daily: DailyFinanceTrend[];
+}
+
+export interface CategoryBudget {
+  category_id: number;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  budget_amount: number;
+  current_spent: number;
+}
+
+export type ReminderRepeat = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface Reminder {
+  id: number;
+  entry_id?: number | null;
+  note_id?: number | null;
+  title: string;
+  message?: string | null;
+  remind_at: string;
+  repeat_type: ReminderRepeat;
+  is_sent: boolean;
+  is_snoozed: boolean;
+  snooze_until?: string | null;
+  created_at: string;
+  updated_at: string;
+  entry_title?: string | null;
+  entry_due_date?: string | null;
+  entry_status?: string | null;
+  note_title?: string | null;
+}
+
+export interface ReminderSettings {
+  daily_digest_enabled: boolean;
+  daily_digest_time: string;
+  weekly_summary_enabled: boolean;
+  weekly_summary_day: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

@@ -261,3 +261,114 @@ CREATE TABLE IF NOT EXISTS dashboard_layouts (
   layout_config JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 17. ตาราง notes (ระบบบันทึกโน้ต, ไดอารี่, Scratchpad)
+CREATE TABLE IF NOT EXISTS notes (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  note_type VARCHAR(20) NOT NULL DEFAULT 'note',
+  mood VARCHAR(20) NULL,
+  tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+  color VARCHAR(20) NOT NULL DEFAULT '#6366F1',
+  linked_entry_id INT NULL REFERENCES entries(id) ON DELETE SET NULL,
+  linked_goal_id INT NULL REFERENCES goals(id) ON DELETE SET NULL,
+  note_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS trigger_notes_updated_at ON notes;
+CREATE TRIGGER trigger_notes_updated_at
+BEFORE UPDATE ON notes
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_notes_note_date ON notes(note_date);
+CREATE INDEX IF NOT EXISTS idx_notes_type ON notes(note_type);
+CREATE INDEX IF NOT EXISTS idx_notes_is_pinned ON notes(is_pinned);
+CREATE INDEX IF NOT EXISTS idx_notes_is_archived ON notes(is_archived);
+CREATE INDEX IF NOT EXISTS idx_notes_tags ON notes USING GIN (tags);
+
+-- 18. ตาราง wallets & transactions (ระบบบัญชีและการเงิน)
+CREATE TABLE IF NOT EXISTS wallets (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(30) NOT NULL DEFAULT 'cash',
+  balance NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  icon VARCHAR(50) NOT NULL DEFAULT 'wallet',
+  color VARCHAR(20) NOT NULL DEFAULT '#6366F1',
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS trigger_wallets_updated_at ON wallets;
+CREATE TRIGGER trigger_wallets_updated_at
+BEFORE UPDATE ON wallets
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id SERIAL PRIMARY KEY,
+  wallet_id INT NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  category_id INT NULL REFERENCES categories(id) ON DELETE SET NULL,
+  to_wallet_id INT NULL REFERENCES wallets(id) ON DELETE SET NULL,
+  type VARCHAR(10) NOT NULL DEFAULT 'expense',
+  amount NUMERIC(14, 2) NOT NULL,
+  note TEXT NULL,
+  tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  transaction_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  attachment_path VARCHAR(500) NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS trigger_transactions_updated_at ON transactions;
+CREATE TRIGGER trigger_transactions_updated_at
+BEFORE UPDATE ON transactions
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_transactions_wallet ON transactions(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_transactions_tags ON transactions USING GIN (tags);
+
+CREATE TABLE IF NOT EXISTS monthly_budgets (
+  id SERIAL PRIMARY KEY,
+  category_id INT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  year_month VARCHAR(7) NOT NULL,
+  budget_amount NUMERIC(14, 2) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT unique_budget_per_category_month UNIQUE (category_id, year_month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_monthly_budgets_ym ON monthly_budgets(year_month);
+
+-- 19. ตาราง reminders (ระบบเตือนความจำอัจฉริยะ)
+CREATE TABLE IF NOT EXISTS reminders (
+  id SERIAL PRIMARY KEY,
+  entry_id INT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  note_id INT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NULL,
+  remind_at TIMESTAMPTZ NOT NULL,
+  repeat_type VARCHAR(20) NOT NULL DEFAULT 'none',
+  is_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  is_snoozed BOOLEAN NOT NULL DEFAULT FALSE,
+  snooze_until TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS trigger_reminders_updated_at ON reminders;
+CREATE TRIGGER trigger_reminders_updated_at
+BEFORE UPDATE ON reminders
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders(remind_at);
+CREATE INDEX IF NOT EXISTS idx_reminders_is_sent ON reminders(is_sent);
+CREATE INDEX IF NOT EXISTS idx_reminders_entry_id ON reminders(entry_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_note_id ON reminders(note_id);

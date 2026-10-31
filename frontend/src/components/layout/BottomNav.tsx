@@ -2,9 +2,9 @@ import React from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
-  KanbanSquare,
-  FolderTree,
-  Calendar,
+  BookOpen,
+  Coins,
+  Bell,
   Plus,
 } from 'lucide-react';
 
@@ -44,15 +44,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <span className="text-[9px] font-medium mt-0.5">รายการ</span>
         </button>
 
-        {/* Kanban Board */}
+        {/* Notes */}
         <button
-          onClick={() => onSelectTab('kanban')}
+          onClick={() => onSelectTab('notes')}
           className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors ${
-            currentTab === 'kanban' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500 dark:text-slate-400'
+            currentTab === 'notes' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500 dark:text-slate-400'
           }`}
         >
-          <KanbanSquare className="w-4 h-4" />
-          <span className="text-[9px] font-medium mt-0.5">คัมบัง</span>
+          <BookOpen className="w-4 h-4" />
+          <span className="text-[9px] font-medium mt-0.5">โน้ต</span>
         </button>
 
         {/* Quick Add (+) Centered Button */}
@@ -66,26 +66,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </button>
         </div>
 
-        {/* Calendar */}
+        {/* Finance */}
         <button
-          onClick={() => onSelectTab('calendar')}
+          onClick={() => onSelectTab('finance')}
           className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors ${
-            currentTab === 'calendar' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500 dark:text-slate-400'
+            currentTab === 'finance' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500 dark:text-slate-400'
           }`}
         >
-          <Calendar className="w-4 h-4" />
-          <span className="text-[9px] font-medium mt-0.5">ปฏิทิน</span>
+          <Coins className="w-4 h-4" />
+          <span className="text-[9px] font-medium mt-0.5">การเงิน</span>
         </button>
 
-        {/* Categories */}
+        {/* Reminders */}
         <button
-          onClick={() => onSelectTab('categories')}
+          onClick={() => onSelectTab('reminders')}
           className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors ${
-            currentTab === 'categories' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500 dark:text-slate-400'
+            currentTab === 'reminders' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-500 dark:text-slate-400'
           }`}
         >
-          <FolderTree className="w-4 h-4" />
-          <span className="text-[9px] font-medium mt-0.5">หมวดหมู่</span>
+          <Bell className="w-4 h-4" />
+          <span className="text-[9px] font-medium mt-0.5">เตือนความจำ</span>
         </button>
       </div>
     </nav>

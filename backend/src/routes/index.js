@@ -7,6 +7,9 @@ const habitRoutes = require('./habitRoutes');
 const goalRoutes = require('./goalRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const templateRoutes = require('./templateRoutes');
+const noteRoutes = require('./noteRoutes');
+const financeRoutes = require('./financeRoutes');
+const reminderRoutes = require('./reminderRoutes');
 const AttachmentController = require('../controllers/attachmentController');
 const { requireAuth } = require('../middlewares/authGuard');
 
@@ -23,6 +26,9 @@ router.use('/habits', requireAuth, habitRoutes);
 router.use('/goals', requireAuth, goalRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/templates', requireAuth, templateRoutes);
+router.use('/notes', requireAuth, noteRoutes);
+router.use('/finance', requireAuth, financeRoutes);
+router.use('/reminders', requireAuth, reminderRoutes);
 router.delete('/attachments/:id', requireAuth, AttachmentController.delete);
 
 module.exports = router;

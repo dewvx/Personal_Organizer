@@ -2,6 +2,9 @@ import React from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
+  BookOpen,
+  Coins,
+  Bell,
   KanbanSquare,
   Target,
   Calendar,
@@ -34,6 +37,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const mainNav = [
     { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: LayoutDashboard },
     { id: 'all', label: 'รายการทั้งหมด (All Lists)', icon: CheckSquare },
+    { id: 'notes', label: 'บันทึกโน้ต (Notes & Diary)', icon: BookOpen },
+    { id: 'finance', label: 'การเงิน (Finance)', icon: Coins },
+    { id: 'reminders', label: 'เตือนความจำ (Reminders)', icon: Bell },
     { id: 'kanban', label: 'กระดานคัมบัง (Kanban)', icon: KanbanSquare },
     { id: 'goals', label: 'เป้าหมายชีวิต (Goals)', icon: Target },
     { id: 'calendar', label: 'ปฏิทินนัดหมาย (Calendar)', icon: Calendar },
