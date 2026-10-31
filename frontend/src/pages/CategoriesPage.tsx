@@ -47,12 +47,10 @@ export const CategoriesPage: React.FC<CategoriesPageProps> = ({
     try {
       setIsDeleting(true);
       await CategoryService.delete(deletingId);
-      showToast('ลบหมวดหมู่เรียบร้อย');
       setDeletingId(null);
-      onRefreshCategories();
+      window.location.reload();
     } catch (err: any) {
       showToast('ไม่สามารถลบหมวดหมู่ได้', 'error');
-    } finally {
       setIsDeleting(false);
     }
   };

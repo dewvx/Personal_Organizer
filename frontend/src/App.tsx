@@ -22,6 +22,7 @@ const MainApp: React.FC = () => {
   const [activeCategoryId, setActiveCategoryId] = useState<number | undefined>(undefined);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Modals
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
@@ -73,6 +74,7 @@ const MainApp: React.FC = () => {
       showToast('สร้างรายการใหม่สำเร็จ');
     }
     loadCategories();
+    setRefreshKey((k) => k + 1);
   };
 
   const handleConfirmDeleteEntry = async () => {
@@ -80,12 +82,11 @@ const MainApp: React.FC = () => {
     try {
       setIsDeleting(true);
       await EntryService.delete(deletingEntryId);
-      showToast('ลบรายการเรียบร้อย');
       setDeletingEntryId(null);
-      loadCategories();
+      // รีโหลดหน้าเว็บให้อัตโนมัติทันทีตามความต้องการของผู้ใช้
+      window.location.reload();
     } catch (err) {
       showToast('ไม่สามารถลบรายการได้', 'error');
-    } finally {
       setIsDeleting(false);
     }
   };
@@ -119,6 +120,7 @@ const MainApp: React.FC = () => {
         <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
           {currentTab === 'dashboard' && (
             <DashboardPage
+              key={`dashboard_${refreshKey}`}
               onOpenNewEntry={() => handleOpenNewEntry()}
               onNavigateTab={(tab, catId) => handleSelectTab(tab, catId)}
               onEditEntry={handleEditEntry}
@@ -128,6 +130,7 @@ const MainApp: React.FC = () => {
 
           {currentTab === 'all' && (
             <AllListsPage
+              key={`all_${refreshKey}`}
               categories={categories}
               searchQuery={searchQuery}
               initialCategoryId={activeCategoryId}
@@ -139,6 +142,7 @@ const MainApp: React.FC = () => {
 
           {currentTab === 'categories' && (
             <CategoriesPage
+              key={`categories_${refreshKey}`}
               categories={categories}
               onRefreshCategories={loadCategories}
               onViewCategoryEntries={(catId) => handleSelectTab('all', catId)}
@@ -147,6 +151,7 @@ const MainApp: React.FC = () => {
 
           {currentTab === 'favorites' && (
             <FavoritesPage
+              key={`favorites_${refreshKey}`}
               onEditEntry={handleEditEntry}
               onDeleteEntry={(id) => setDeletingEntryId(id)}
               onNavigateAll={() => handleSelectTab('all')}
@@ -154,7 +159,10 @@ const MainApp: React.FC = () => {
           )}
 
           {currentTab === 'archive' && (
-            <ArchivePage onNavigateAll={() => handleSelectTab('all')} />
+            <ArchivePage
+              key={`archive_${refreshKey}`}
+              onNavigateAll={() => handleSelectTab('all')}
+            />
           )}
         </main>
       </div>

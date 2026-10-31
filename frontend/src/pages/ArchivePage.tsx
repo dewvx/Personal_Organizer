@@ -54,12 +54,10 @@ export const ArchivePage: React.FC<ArchivePageProps> = ({ onNavigateAll }) => {
     try {
       setIsDeleting(true);
       await EntryService.delete(deletingId);
-      showToast('ลบรายการถาวรเรียบร้อย');
       setDeletingId(null);
-      loadArchived();
+      window.location.reload();
     } catch (err) {
       showToast('ไม่สามารถลบรายการได้', 'error');
-    } finally {
       setIsDeleting(false);
     }
   };
