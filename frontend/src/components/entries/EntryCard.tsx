@@ -272,12 +272,17 @@ export const EntryCard: React.FC<EntryCardProps> = ({
               </span>
             )}
 
-            {/* Date */}
+            {/* Date (Clickable to edit/change date) */}
             {entry.entry_date && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
-                <Calendar className="w-3 h-3" />
+              <button
+                type="button"
+                onClick={() => onEdit(entry)}
+                title="คลิกเพื่อแก้ไขวันที่หรือรายละเอียดรายการ"
+                className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 px-1.5 py-0.5 rounded-md transition-colors"
+              >
+                <Calendar className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
                 <span>{formatDate(entry.entry_date)}</span>
-              </span>
+              </button>
             )}
 
             {/* Tags */}

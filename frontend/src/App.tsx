@@ -31,6 +31,7 @@ const MainApp: React.FC = () => {
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [defaultEntryCategoryId, setDefaultEntryCategoryId] = useState<number | undefined>(undefined);
+  const [defaultEntryDate, setDefaultEntryDate] = useState<string | undefined>(undefined);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [shoppingModeEntry, setShoppingModeEntry] = useState<Entry | null>(null);
@@ -64,9 +65,10 @@ const MainApp: React.FC = () => {
   };
 
   // Entry Actions
-  const handleOpenNewEntry = (categoryPresetId?: number) => {
+  const handleOpenNewEntry = (categoryPresetId?: number, datePreset?: string) => {
     setEditingEntry(null);
     setDefaultEntryCategoryId(categoryPresetId || activeCategoryId);
+    setDefaultEntryDate(datePreset);
     setIsEntryModalOpen(true);
   };
 
@@ -188,7 +190,7 @@ const MainApp: React.FC = () => {
           {currentTab === 'calendar' && (
             <CalendarViewPage
               key={`calendar_${refreshKey}`}
-              onOpenNewEntry={() => handleOpenNewEntry()}
+              onOpenNewEntry={(datePreset) => handleOpenNewEntry(undefined, datePreset)}
               onEditEntry={handleEditEntry}
               onDeleteEntry={(id) => setDeletingEntryId(id)}
               onDuplicate={handleDuplicateEntry}
@@ -238,11 +240,13 @@ const MainApp: React.FC = () => {
         onClose={() => {
           setIsEntryModalOpen(false);
           setEditingEntry(null);
+          setDefaultEntryDate(undefined);
         }}
         onSubmit={handleEntrySubmit}
         initialData={editingEntry}
         categories={categories}
         defaultCategoryId={defaultEntryCategoryId}
+        defaultDate={defaultEntryDate}
       />
 
       {/* Shopping Focus Mode Modal */}
